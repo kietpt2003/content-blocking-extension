@@ -1,0 +1,23 @@
+{
+  "name": "content-blocking-extension",
+  "version": "0.1.10",
+  "private": true,
+  "type": "module",
+  "description": "Chrome MV3 domain, request and DOM content blocker",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/unit/*.test.js",
+    "test:browser": "npm run build && playwright test",
+    "check": "prettier --check src scripts tests playwright.config.js package.json",
+    "format": "prettier --write src scripts tests playwright.config.js package.json",
+    "package": "npm run build && node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "esbuild": "0.28.2",
+    "prettier": "3.8.2"
+  }
+}

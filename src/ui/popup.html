@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Home Content Blocker</title>
+    <link rel="stylesheet" href="ui.css" />
+  </head>
+  <body class="popup">
+    <header>
+      <img src="icons/48.png" width="36" height="36" alt="" />
+      <div>
+        <strong>Home Content Blocker</strong
+        ><span class="muted">Bộ lọc trên trình duyệt · <span id="version"></span></span>
+      </div>
+    </header>
+    <main>
+      <label class="switch-row hero"
+        ><span><strong>Bật bộ lọc</strong><small>Domain và nội dung trang</small></span
+        ><input id="enabled" type="checkbox" role="switch" disabled
+      /></label>
+      <section class="card">
+        <span class="eyebrow">TRANG HIỆN TẠI</span><strong id="host">Đang đọc…</strong>
+        <p><b id="hidden">0</b> thành phần đang được ẩn</p>
+        <button id="site-toggle" class="secondary" disabled>Tạm tắt trên website này</button>
+      </section>
+      <section id="youtube-panel" class="card" hidden>
+        <span class="eyebrow">CHẨN ĐOÁN YOUTUBE</span>
+        <p id="youtube-state">Đang đọc bộ lọc…</p>
+        <p id="youtube-counts"></p>
+        <p id="network-state"></p>
+        <button id="capture-network" class="secondary">Ghi 60 giây và tải lại tab</button>
+        <button id="clear-network" class="quiet">Xóa bản ghi request</button>
+        <button id="copy-diagnostics" class="secondary">Sao chép chẩn đoán</button>
+      </section>
+      <p class="hint">
+        Số trên biểu tượng là request bị chặn. Số ở đây là thành phần HTML đang ẩn, không phải số
+        quảng cáo trong video.
+      </p>
+      <button id="options" class="primary">Mở cài đặt &amp; quy tắc</button>
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

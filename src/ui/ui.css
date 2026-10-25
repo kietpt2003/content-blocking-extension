@@ -1,0 +1,279 @@
+:root {
+  color-scheme: light;
+  font:
+    15px/1.5 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #183b35;
+  background: #f3f5ef;
+  --green: #17684c;
+  --border: #d9e2d4;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0;
+}
+header strong {
+  font-size: 16px;
+}
+header .muted {
+  display: block;
+}
+h1 {
+  font-size: 26px;
+  letter-spacing: -0.7px;
+  margin: 0;
+}
+h2 {
+  font-size: 20px;
+  letter-spacing: -0.4px;
+  margin: 5px 0 18px;
+}
+p {
+  margin: 8px 0;
+}
+.muted,
+small,
+.hint,
+footer {
+  color: #61726b;
+}
+small {
+  display: block;
+  max-width: 560px;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 3px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 1.7px;
+  font-weight: 750;
+  color: var(--green);
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 24px;
+  margin: 20px 0;
+}
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf0e8;
+  cursor: pointer;
+}
+.switch-row:last-of-type {
+  border-bottom: 0;
+}
+input[type='checkbox'] {
+  accent-color: var(--green);
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+input[role='switch'] {
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  border-radius: 20px;
+  background: #b8c6bc;
+  position: relative;
+  transition: background 0.15s;
+}
+input[role='switch']::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  left: 3px;
+  top: 3px;
+  box-shadow: 0 1px 3px #0002;
+  transition: transform 0.15s;
+}
+input[role='switch']:checked {
+  background: var(--green);
+}
+input[role='switch']:checked::after {
+  transform: translateX(18px);
+}
+input:focus-visible,
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #91c9ad;
+  outline-offset: 3px;
+}
+button {
+  font: 600 14px system-ui;
+  cursor: pointer;
+  min-height: 40px;
+  border-radius: 9px;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  transition: filter 0.15s;
+}
+button:hover {
+  filter: brightness(0.95);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.primary {
+  background: var(--green);
+  color: #fff;
+}
+.secondary {
+  background: #fff;
+  color: #245743;
+  border-color: var(--border);
+}
+.quiet {
+  background: transparent;
+  color: #697a70;
+}
+.hint {
+  font-size: 13px;
+}
+.site-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.site-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff5ed;
+  border-radius: 9px;
+  padding: 8px 15px;
+}
+.options {
+  max-width: 850px;
+  padding: 0 25px 30px;
+  margin: auto;
+}
+.options header p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+.version {
+  margin-left: auto;
+  font-size: 12px;
+  background: #e2ecde;
+  padding: 5px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  background: #fafcf8;
+  border-radius: 9px;
+  padding: 12px;
+  font:
+    13px/1.6 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  resize: vertical;
+  color: #243f35;
+}
+textarea + .hint {
+  margin-bottom: 23px;
+}
+.actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+#status {
+  min-height: 22px;
+  font-size: 13px;
+  color: var(--green);
+}
+#status[data-error='true'] {
+  color: #ac332a;
+}
+footer {
+  font-size: 12px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 25px;
+}
+.popup {
+  width: 360px;
+}
+.popup header {
+  padding: 18px 20px;
+}
+.popup main {
+  padding: 0 20px 16px;
+}
+.popup .hero {
+  padding: 17px 0;
+}
+.popup .card {
+  padding: 18px;
+  margin: 8px 0 13px;
+}
+.popup #host {
+  display: block;
+  word-break: break-word;
+  margin-top: 5px;
+}
+.popup .card p {
+  font-size: 13px;
+  color: #61726b;
+  margin: 13px 0;
+}
+.popup #hidden {
+  font-size: 27px;
+  color: #17684c;
+  margin-right: 6px;
+}
+.popup button {
+  width: 100%;
+}
+.popup .hint {
+  font-size: 11px;
+  margin-bottom: 15px;
+}
+@media (max-width: 600px) {
+  .options {
+    padding: 0 16px;
+  }
+  .card {
+    padding: 18px;
+  }
+  .version {
+    display: none;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  .actions button {
+    flex: 1;
+  }
+}

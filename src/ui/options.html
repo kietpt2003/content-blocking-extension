@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Cài đặt · Home Content Blocker</title>
+    <link rel="stylesheet" href="ui.css" />
+  </head>
+  <body class="options">
+    <header>
+      <img src="icons/48.png" width="44" height="44" alt="" />
+      <div>
+        <h1>Home Content Blocker</h1>
+        <p class="muted">Quy tắc của bạn. Lưu trên trình duyệt của bạn.</p>
+      </div>
+      <span class="version">0.1.0</span>
+    </header>
+    <main>
+      <form id="settings-form">
+        <section class="card">
+          <span class="eyebrow">LỚP BẢO VỆ</span>
+          <h2>Chặn request &amp; lọc nội dung</h2>
+          <label class="switch-row"
+            ><span><strong>Bật bộ lọc</strong><small>Công tắc chung cho extension</small></span
+            ><input id="enabled" type="checkbox" role="switch"
+          /></label>
+          <label class="switch-row"
+            ><span
+              ><strong>Chặn domain / URL</strong
+              ><small>Ngăn tải tài nguyên từ các địa chỉ quảng cáo</small></span
+            ><input id="network" type="checkbox" role="switch"
+          /></label>
+          <label class="switch-row"
+            ><span
+              ><strong>Ẩn thành phần HTML</strong
+              ><small>Theo dõi bài mới, cuộn trang và điều hướng SPA</small></span
+            ><input id="cosmetic" type="checkbox" role="switch"
+          /></label>
+        </section>
+        <section class="card">
+          <span class="eyebrow">WEBSITE</span>
+          <h2>Quy tắc theo nền tảng</h2>
+          <div class="site-grid">
+            <label><input id="youtube" type="checkbox" /> YouTube</label
+            ><label><input id="facebook" type="checkbox" /> Facebook</label
+            ><label><input id="tiktok" type="checkbox" /> TikTok</label>
+          </div>
+          <label class="switch-row"
+            ><span
+              ><strong>Thử nghiệm: JSON YouTube</strong
+              ><small
+                >Lọc dữ liệu quảng cáo YouTube đã nhận diện. Tắt nếu phát video gặp lỗi; cần tải lại
+                trang sau khi đổi.</small
+              ></span
+            ><input id="youtubeData" type="checkbox" role="switch"
+          /></label>
+          <p class="hint">
+            Không bảo đảm bỏ mọi quảng cáo trong video. Facebook/TikTok chỉ ẩn các bài có dấu hiệu
+            quảng cáo được nhận diện; không tìm theo toàn bộ nội dung bài viết.
+          </p>
+        </section>
+        <section class="card">
+          <span class="eyebrow">QUY TẮC RIÊNG</span>
+          <h2>Domain &amp; HTML</h2>
+          <label for="customDomains">Domain bổ sung cần chặn</label
+          ><textarea
+            id="customDomains"
+            rows="5"
+            spellcheck="false"
+            placeholder="ads.example.com&#10;tracking.example.com"
+          ></textarea>
+          <p class="hint">
+            Mỗi dòng một domain. Bao gồm subdomain; không nhập https://, path hoặc wildcard. Không
+            chặn điều hướng trang chính.
+          </p>
+          <label for="customCosmetic">Quy tắc HTML</label
+          ><textarea
+            id="customCosmetic"
+            rows="5"
+            spellcheck="false"
+            placeholder="news.example.com##.advertisement&#10;example.com##[data-advertisement]"
+          ></textarea>
+          <p class="hint">
+            Dạng domain##CSS-selector. Đây là tập con đơn giản, không phải trình đọc EasyList đầy
+            đủ.
+          </p>
+          <label for="disabledSites">Website được bỏ qua</label
+          ><textarea
+            id="disabledSites"
+            rows="3"
+            spellcheck="false"
+            placeholder="example.com"
+          ></textarea>
+          <p class="hint">Áp dụng cả lọc request và HTML. Ngoại lệ được ưu tiên hơn domain chặn.</p>
+        </section>
+        <div class="actions">
+          <button id="save" type="submit" class="primary">Lưu cấu hình</button
+          ><button id="export" type="button" class="secondary">Xuất JSON</button
+          ><button id="import" type="button" class="secondary">Nhập JSON</button
+          ><button id="reset" type="button" class="quiet">Khôi phục mặc định</button
+          ><input id="file" type="file" accept="application/json,.json" hidden />
+        </div>
+        <p id="status" role="status" aria-live="polite">Đang đọc cấu hình…</p>
+      </form>
+      <footer>
+        Không gửi lịch sử duyệt web, cookie hoặc nội dung trang lên server. Extension chỉ hoạt động
+        trên Chrome đã cài; không lọc các ứng dụng khác.
+      </footer>
+    </main>
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

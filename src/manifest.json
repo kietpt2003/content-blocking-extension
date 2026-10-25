@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "minimum_chrome_version": "120",
+  "name": "Home Content Blocker",
+  "version": "0.1.10",
+  "description": "Chặn domain quảng cáo và lọc thành phần HTML trên YouTube, Facebook, TikTok và website khác.",
+  "permissions": ["storage", "declarativeNetRequestWithHostAccess", "webRequest", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Home Content Blocker",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
+  }
+}

@@ -1,0 +1,700 @@
+import { test, expect, chromium } from '@playwright/test';
+import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { DEFAULTS } from '../../src/config/defaults.js';
+
+let context, control, extensionId, profile, upstream, port;
+let adRequests = 0;
+const errors = [];
+
+test.beforeAll(async () => {
+  profile = await mkdtemp(path.join(os.tmpdir(), 'content-blocker-browser-'));
+  const extension = path.resolve('dist/extension');
+  context = await chromium.launchPersistentContext(profile, {
+    channel: 'chromium',
+    headless: true,
+    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+  });
+  let [worker] = context.serviceWorkers();
+  if (!worker) worker = await context.waitForEvent('serviceworker');
+  worker.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  extensionId = worker.url().split('/')[2];
+  control = await context.newPage();
+  await control.goto(`chrome-extension://${extensionId}/options.html`);
+  await expect(control.locator('#status')).toContainText('cục bộ');
+  upstream = createServer((request, response) => {
+    if (request.url === '/blocked.js') {
+      adRequests++;
+      response.writeHead(200, {
+        'content-type': 'application/javascript',
+        'cache-control': 'no-store',
+      });
+      response.end('window.fixtureAdLoaded = true;');
+    } else {
+      response.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' });
+      response.end(
+        `<html><head><title>Network fixture</title></head><body><p>Organic</p><script src="http://127.0.0.1:${port}/blocked.js"></script></body></html>`,
+      );
+    }
+  });
+  await new Promise((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+  port = upstream.address().port;
+});
+
+test.afterAll(async () => {
+  await context?.close();
+  if (upstream) await new Promise((resolve) => upstream.close(resolve));
+  if (profile) await rm(profile, { recursive: true, force: true });
+});
+
+async function setSettings(patch = {}) {
+  const result = await control.evaluate(
+    (settings) => chrome.runtime.sendMessage({ type: 'UPDATE_SETTINGS', patch: settings }),
+    { ...structuredClone(DEFAULTS), ...patch },
+  );
+  expect(result.ok, result.error).toBe(true);
+}
+
+async function fixture(url, html) {
+  const page = await context.newPage();
+  await page.route('**/*', (route) =>
+    route.request().isNavigationRequest()
+      ? route.fulfill({
+          contentType: 'text/html',
+          body: `<!doctype html><html><head><meta charset="utf-8"><title>Fixture</title></head><body>${html}</body></html>`,
+        })
+      : route.abort(),
+  );
+  await page.goto(url);
+  return page;
+}
+
+test.beforeEach(async () => {
+  await setSettings();
+});
+
+test.afterEach(async () => {
+  for (const page of context.pages()) if (page !== control) await page.close();
+});
+
+test('Facebook hides marked ads, keeps ordinary text, and handles recycled/lazy feed nodes', async () => {
+  const page = await fixture(
+    'https://www.facebook.com/__fixture__',
+    `
+    <div role="feed"><div role="article" id="organic">Sponsored is a word in this ordinary post.<button>Like</button><div role="article" id="comment"><a href="/ads/about/?id=comment">Discussing an ad link</a></div></div>
+    <div role="article" id="advert"><a aria-label="Được tài trợ" href="#">Brand</a><p>Ad</p></div></div>`,
+  );
+  await expect(page.locator('#advert')).toBeHidden();
+  await expect(page.locator('#organic')).toBeVisible();
+  await expect(page.locator('#comment')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Like' })).toBeVisible();
+  await page.evaluate(() => document.querySelector('#advert a').removeAttribute('aria-label'));
+  await expect(page.locator('#advert')).toBeVisible();
+  await page.evaluate(() => {
+    history.pushState({}, '', '/__fixture__/next');
+    const post = document.createElement('div');
+    post.id = 'new-ad';
+    post.setAttribute('role', 'article');
+    post.innerHTML = '<a href="/ads/about/?id=1">Sponsored</a><p>New ad</p>';
+    document.querySelector('[role=feed]').append(post);
+  });
+  await expect(page.locator('#new-ad')).toBeHidden();
+  await setSettings({ enabled: false });
+  await expect(page.locator('#new-ad')).toBeVisible();
+  await expect(page.locator('#new-ad')).not.toHaveAttribute('data-content-blocker-hidden');
+  await page.close();
+});
+
+test('Facebook sidebar hides Sponsored image cards and preserves Contacts, Birthdays and normal posts', async () => {
+  const page = await fixture(
+    'https://www.facebook.com/__sidebar__',
+    `
+    <aside role="complementary" id="sidebar">
+      <section id="sidebar-ads" style="display:flex">
+        <div><div><div><span><div><h3><span>Spon\u200bsored</span></h3></div></span></div></div></div>
+        <a href="https://example.com/ad-one"><img alt="Ad one">Ad one</a>
+        <a href="https://example.com/ad-two"><img alt="Ad two">Ad two</a>
+      </section>
+      <section id="contacts"><h3>Contacts</h3><a href="/friend"><img alt="Friend">Friend</a><span>Sponsored</span></section>
+      <section id="birthdays"><h3>Birthdays</h3><a href="/birthday">Birthday</a></section>
+    </aside>
+    <main role="feed"><div role="article" id="organic"><h3>Sponsored</h3><a href="https://example.com"><img alt="A normal photo">Discussing sponsorship</a></div></main>`,
+  );
+  await expect(page.locator('#sidebar-ads')).toBeHidden();
+  for (const id of ['sidebar', 'contacts', 'birthdays', 'organic'])
+    await expect(page.locator(`#${id}`)).toBeVisible();
+  await setSettings({ sites: { youtube: true, facebook: false, tiktok: true } });
+  await expect(page.locator('#sidebar-ads')).toBeVisible();
+  expect(await page.locator('#sidebar-ads').evaluate((e) => e.style.display)).toBe('flex');
+  await setSettings();
+  await expect(page.locator('#sidebar-ads')).toBeHidden();
+});
+
+test('Facebook sidebar handles late nested images and restores a section whose heading changes', async () => {
+  const page = await fixture(
+    'https://www.facebook.com/__sidebar-lazy__',
+    `
+    <aside role="complementary"><section id="lazy"><div><h3>Được tài trợ</h3></div>
+    <a id="card" href="https://example.com/ad"><span id="image-slot"></span>Advert</a></section>
+    <section id="contacts"><h3>Contacts</h3><a href="/friend"><img alt="Friend">Friend</a></section></aside>`,
+  );
+  await expect(page.locator('#lazy')).toBeVisible();
+  await page.locator('#image-slot').evaluate((e) => {
+    const image = document.createElement('img');
+    image.alt = 'Advert';
+    e.append(image);
+  });
+  await expect(page.locator('#lazy')).toBeHidden();
+  await expect(page.locator('#contacts')).toBeVisible();
+  await page.locator('#lazy h3').evaluate((e) => {
+    e.textContent = 'Contacts';
+  });
+  await expect(page.locator('#lazy')).toBeVisible();
+  await expect(page.locator('#lazy')).not.toHaveAttribute('data-content-blocker-hidden');
+});
+
+test('TikTok hides sponsored cards while keeping ordinary videos', async () => {
+  const page = await fixture(
+    'https://www.tiktok.com/__fixture__',
+    `
+    <div data-e2e="recommend-list-item-container" id="organic">An ordinary video mentioning ads</div>
+    <div data-e2e="recommend-list-item-container" id="advert"><span data-e2e="ad-label">Sponsored</span></div>`,
+  );
+  await expect(page.locator('#advert')).toBeHidden();
+  await expect(page.locator('#organic')).toBeVisible();
+  await setSettings({ sites: { youtube: true, facebook: true, tiktok: false } });
+  await expect(page.locator('#advert')).toBeVisible();
+  await page.close();
+});
+
+test('YouTube hides feed ad HTML without hiding playback or organic controls', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=fixture',
+    `
+    <div id="movie_player"><video></video><button>Play</button></div>
+    <ytd-ad-slot-renderer id="advert">Ad</ytd-ad-slot-renderer>
+    <ytd-video-renderer id="organic">Ordinary video</ytd-video-renderer>`,
+  );
+  await expect(page.locator('#advert')).toBeHidden();
+  await expect(page.locator('#movie_player')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+  await expect(page.locator('#organic')).toBeVisible();
+  await page.close();
+});
+
+test('site exceptions restore HTML; custom selectors work on other websites', async () => {
+  await setSettings({ customCosmetic: [{ domain: 'example.com', selector: '.fixture-ad' }] });
+  const page = await fixture(
+    'https://news.example.com/__fixture__',
+    '<div class="fixture-ad" id="advert" style="display:flex">Ad</div><p id="organic">News</p>',
+  );
+  await expect(page.locator('#advert')).toBeHidden();
+  await setSettings({
+    customCosmetic: [{ domain: 'example.com', selector: '.fixture-ad' }],
+    disabledSites: ['example.com'],
+  });
+  await expect(page.locator('#advert')).toBeVisible();
+  expect(await page.locator('#advert').evaluate((element) => element.style.display)).toBe('flex');
+  await page.close();
+});
+
+test('Chrome actually blocks network requests and clearing settings removes the block', async () => {
+  adRequests = 0;
+  await control.reload();
+  await control.locator('#customDomains').fill('127.0.0.1');
+  await control.getByRole('button', { name: 'Lưu cấu hình' }).click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  const page = await context.newPage();
+  await page.goto(`http://localhost:${port}/network`);
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
+  expect(adRequests).toBe(0);
+  await setSettings({ network: false });
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  expect(adRequests).toBe(1);
+  await setSettings({ customDomains: ['127.0.0.1'], disabledSites: ['localhost'] });
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  expect(adRequests).toBe(2);
+  await page.close();
+});
+
+test('YouTube network rules block ad endpoints and keep ordinary media requests', async () => {
+  const page = await context.newPage();
+  await page.route('**/*', (route) =>
+    route.fulfill({
+      contentType: route.request().isNavigationRequest() ? 'text/html' : 'text/plain',
+      headers: { 'access-control-allow-origin': '*' },
+      body: route.request().isNavigationRequest() ? '<p>Network fixture</p>' : 'allowed',
+    }),
+  );
+  await page.goto('https://www.youtube.com/watch?v=network');
+  const fetchable = (url) =>
+    page.evaluate(async (value) => {
+      try {
+        return await (await fetch(value)).text();
+      } catch {
+        return 'blocked';
+      }
+    }, url);
+  for (const url of [
+    'https://googleads.g.doubleclick.net/pagead/ads',
+    'https://pagead2.googlesyndication.com/pagead/ads',
+    'https://www.youtube.com/pagead/adview',
+    'https://www.youtube.com/get_midroll_info?video_id=fixture',
+    'https://rr1.googlevideo.com/initplayback?source=youtube&c=TVHTML5&oad=1',
+  ])
+    expect(await fetchable(url)).toBe('blocked');
+  for (const url of [
+    'https://rr1.googlevideo.com/videoplayback?id=organic',
+    'https://rr1.googlevideo.com/initplayback?source=youtube&c=TVHTML5',
+    'https://rr1.googlevideo.com/initplayback?source=youtube&c=WEB&oad=1',
+    'https://www.youtube.com/get_midroll_info-other?video_id=fixture',
+    'https://googlevideo.com.example.com/initplayback?source=youtube&c=TVHTML5&oad=1',
+  ])
+    expect(await fetchable(url)).toBe('allowed');
+  await setSettings({ network: false });
+  expect(await fetchable('https://googleads.g.doubleclick.net/pagead/ads')).toBe('allowed');
+  await setSettings({ disabledSites: ['youtube.com'] });
+  expect(
+    await fetchable('https://rr1.googlevideo.com/initplayback?source=youtube&c=TVHTML5&oad=1'),
+  ).toBe('allowed');
+  await setSettings();
+  await page.goto('https://news.example.com/');
+  expect(await fetchable('https://www.youtube.com/get_midroll_info?video_id=fixture')).toBe(
+    'allowed',
+  );
+  expect(
+    await fetchable('https://rr1.googlevideo.com/initplayback?source=youtube&c=TVHTML5&oad=1'),
+  ).toBe('allowed');
+});
+
+test('YouTube never auto-clicks Skip, seeks or resumes ad media', async () => {
+  const wav = Buffer.alloc(44 + 16000);
+  wav.write('RIFF');
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24);
+  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write('data', 36);
+  wav.writeUInt32LE(wav.length - 44, 40);
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=no-auto-skip',
+    `<div id="movie_player"><video muted preload="auto" src="data:audio/wav;base64,${wav.toString('base64')}"></video>
+      <div class="ytp-ad-player-overlay"><button class="ytp-skip-ad-button" onclick="window.skipClicks++">Skip</button></div>
+    </div><script>window.skipClicks = 0;</script>`,
+  );
+  await page.waitForFunction(() => document.querySelector('video').readyState >= 1);
+  await expect.poll(youtubeStatus).toMatchObject({ active: true });
+  await page.locator('#movie_player').evaluate((player) => player.classList.add('ad-showing'));
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => window.skipClicks)).toBe(0);
+  await expect(page.locator('button')).toBeVisible();
+  await page.locator('button').evaluate((button) => {
+    button.disabled = true;
+  });
+  await page.waitForTimeout(1200);
+  expect(
+    await page.locator('video').evaluate((video) => ({
+      time: video.currentTime,
+      paused: video.paused,
+      rate: video.playbackRate,
+    })),
+  ).toEqual({ time: 0, paused: true, rate: 1 });
+});
+
+test('network capture is opt-in, restricted to one tab, sanitized and clearable', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=capture',
+    '<div id="movie_player" class="ad-showing"><video></video></div>',
+  );
+  const other = await fixture('https://www.youtube.com/watch?v=other', '<p>Other tab</p>');
+  for (const tab of [page, other])
+    await tab.route('https://*.googlevideo.com/**', (route) =>
+      route.fulfill({
+        contentType: 'text/plain',
+        headers: { 'access-control-allow-origin': '*' },
+        body: 'fixture',
+      }),
+    );
+  const tabId = await control.evaluate(
+    async () => (await chrome.tabs.query({ url: 'https://www.youtube.com/watch?v=capture' }))[0].id,
+  );
+  const message = (type) =>
+    control.evaluate((value) => chrome.runtime.sendMessage(value), { type, tabId });
+  expect((await message('GET_NETWORK_DIAGNOSTICS')).network.capture.requests).toEqual([]);
+  expect((await message('START_NETWORK_CAPTURE')).ok).toBe(true);
+  await page.evaluate(async () => {
+    await fetch(
+      'https://rr1.googlevideo.com/videoplayback?c=WEB&source=youtube&oad=secret-token&sig=secret-token&id=private-video',
+    );
+  });
+  await expect
+    .poll(async () => (await message('GET_NETWORK_DIAGNOSTICS')).network.capture.requests.length)
+    .toBeGreaterThan(0);
+  const report = (await message('GET_NETWORK_DIAGNOSTICS')).network.capture;
+  expect(report.recording).toBe(true);
+  expect(report.requests).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        host: 'rr1.googlevideo.com',
+        path: '/videoplayback',
+        adAtObservation: true,
+        parameters: { client: 'WEB', source: 'youtube', oad: 'present' },
+      }),
+    ]),
+  );
+  expect(JSON.stringify(report)).not.toMatch(/secret-token|private-video|requestId|signature/);
+  await other.evaluate(async () => {
+    await fetch('https://rr2.googlevideo.com/videoplayback?c=WEB');
+  });
+  await message('STOP_NETWORK_CAPTURE');
+  expect(
+    (await message('GET_NETWORK_DIAGNOSTICS')).network.capture.requests.some(
+      (item) => item.host === 'rr2.googlevideo.com',
+    ),
+  ).toBe(false);
+  await page.evaluate(async () => {
+    await fetch('https://rr3.googlevideo.com/videoplayback?c=WEB');
+  });
+  const stopped = (await message('GET_NETWORK_DIAGNOSTICS')).network.capture;
+  expect(stopped.recording).toBe(false);
+  expect(stopped.requests.some((item) => item.host === 'rr3.googlevideo.com')).toBe(false);
+  expect((await message('CLEAR_NETWORK_CAPTURE')).network.capture.requests).toEqual([]);
+});
+
+test('popup starts, stops and clears network capture for the active YouTube tab', async () => {
+  const page = await fixture('https://www.youtube.com/watch?v=capture-ui', '<p>YouTube</p>');
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.bringToFront();
+  await popup.reload();
+  await expect(popup.locator('#host')).toHaveText('www.youtube.com');
+  await popup.locator('#capture-network').click();
+  await expect(popup.locator('#capture-network')).toHaveText('Dừng ghi request');
+  await expect(popup.locator('#network-state')).toContainText('đang ghi');
+  await popup.locator('#capture-network').click();
+  await expect(popup.locator('#capture-network')).toHaveText('Ghi 60 giây và tải lại tab');
+  await popup.locator('#clear-network').click();
+  await expect(popup.locator('#status')).toHaveText('Đã xóa bản ghi request.');
+});
+
+test('capture is armed before automatic reload requests the first media segment', async () => {
+  const page = await context.newPage();
+  let navigations = 0;
+  await page.route('https://www.youtube.com/watch?v=reload-capture', (route) => {
+    navigations++;
+    return route.fulfill({
+      contentType: 'text/html',
+      body: '<script>fetch("https://rr1.googlevideo.com/videoplayback?c=WEB&source=youtube").catch(() => {})</script>',
+    });
+  });
+  await page.route('https://rr1.googlevideo.com/**', (route) =>
+    route.fulfill({
+      contentType: 'text/plain',
+      headers: { 'access-control-allow-origin': '*' },
+      body: 'segment',
+    }),
+  );
+  await page.goto('https://www.youtube.com/watch?v=reload-capture');
+  const tabId = await control.evaluate(
+    async () =>
+      (await chrome.tabs.query({ url: 'https://www.youtube.com/watch?v=reload-capture' }))[0].id,
+  );
+  const start = await control.evaluate(
+    (tabId) =>
+      chrome.runtime.sendMessage({ type: 'START_NETWORK_CAPTURE', tabId, reloadTab: true }),
+    tabId,
+  );
+  expect(start.ok).toBe(true);
+  expect(start.network.capture.startedWithReload).toBe(true);
+  await expect
+    .poll(async () => {
+      const result = await control.evaluate(
+        (tabId) => chrome.runtime.sendMessage({ type: 'GET_NETWORK_DIAGNOSTICS', tabId }),
+        tabId,
+      );
+      return result.network.capture.requests.some(
+        (request) => request.path === '/videoplayback' && request.host === 'rr1.googlevideo.com',
+      );
+    })
+    .toBe(true);
+  expect(navigations).toBe(2);
+  await control.evaluate(
+    (tabId) => chrome.runtime.sendMessage({ type: 'STOP_NETWORK_CAPTURE', tabId }),
+    tabId,
+  );
+});
+
+test('DOM hiding works under strict page CSP without changing the policy', async () => {
+  const page = await context.newPage();
+  const policy = "default-src 'none'; style-src 'none'; script-src 'none'";
+  await page.route('https://news.example.com/**', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      headers: { 'content-security-policy': policy },
+      body: '<html><head><meta charset="utf-8"></head><body><ins class="adsbygoogle" id="advert">Ad</ins><p id="organic">News</p></body></html>',
+    }),
+  );
+  const response = await page.goto('https://news.example.com/__fixture__');
+  expect(response.headers()['content-security-policy']).toBe(policy);
+  await expect(page.locator('#advert')).toBeHidden();
+  await expect(page.locator('#organic')).toBeVisible();
+  await page.close();
+});
+
+test('experimental YouTube fetch filtering preserves response metadata and supports pause', async () => {
+  await setSettings({ youtubeData: true });
+  const page = await context.newPage();
+  await page.route('https://www.youtube.com/**', (route) => {
+    if (route.request().url().includes('/youtubei/'))
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          adPlacements: [1],
+          streamingData: { formats: [{ url: 'keep' }] },
+          playabilityStatus: { status: 'OK' },
+        }),
+      });
+    return route.fulfill({
+      contentType: 'text/html',
+      body: '<html><head></head><body><p>Player fixture</p></body></html>',
+    });
+  });
+  await page.goto('https://www.youtube.com/watch?v=fixture');
+  // Poll fetch rather than depending on cross-world startup event ordering.
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const response = await fetch('/youtubei/v1/player');
+        return { data: await response.json(), url: response.url, status: response.status };
+      }),
+    )
+    .toEqual({
+      data: { streamingData: { formats: [{ url: 'keep' }] }, playabilityStatus: { status: 'OK' } },
+      url: 'https://www.youtube.com/youtubei/v1/player',
+      status: 200,
+    });
+  await setSettings({ youtubeData: false });
+  await expect
+    .poll(() =>
+      page.evaluate(async () => (await (await fetch('/youtubei/v1/player')).json()).adPlacements),
+    )
+    .toEqual([1]);
+  await page.close();
+});
+
+test('options reject malformed selectors and import/export remain local', async () => {
+  await control.reload();
+  await control.locator('#customCosmetic').fill('example.com##[');
+  await control.getByRole('button', { name: 'Lưu cấu hình' }).click();
+  await expect(control.locator('#status')).toContainText('CSS selector không hợp lệ');
+  await control.locator('#file').setInputFiles({
+    name: 'settings.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ ...DEFAULTS, customDomains: ['ads.example.com'] })),
+  });
+  await expect(control.locator('#customDomains')).toHaveValue('ads.example.com');
+  await expect(control.locator('#status')).toContainText('Bấm Lưu');
+  await control.getByRole('button', { name: 'Lưu cấu hình' }).click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  const download = control.waitForEvent('download');
+  await control.getByRole('button', { name: 'Xuất JSON' }).click();
+  expect((await download).suggestedFilename()).toBe('home-content-blocker.json');
+  await mkdir('artifacts', { recursive: true });
+  await control.screenshot({
+    path: 'artifacts/options.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
+  const popup = await context.newPage();
+  await popup.setViewportSize({ width: 360, height: 560 });
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.locator('#enabled')).toBeChecked();
+  await popup.screenshot({ path: 'artifacts/popup.png', fullPage: true, animations: 'disabled' });
+  await popup.close();
+  expect(errors).toEqual([]);
+});
+
+async function youtubeStatus() {
+  return control.evaluate(async () => {
+    const tabs = await chrome.tabs.query({ url: 'https://www.youtube.com/*' });
+    return chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_STATUS' }, { frameId: 0 });
+  });
+}
+
+test('initial YouTube player data is cleaned while existing references remain valid', async () => {
+  await setSettings({ youtubeData: true });
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=initial',
+    `
+    <script>
+      window.ytInitialPlayerResponse = { adPlacements: [1], streamingData: { formats: ['keep'] }, playabilityStatus: { status: 'OK' } };
+      window.playerHeldReference = window.ytInitialPlayerResponse;
+      window.adsConsumedDuringBootstrap = Boolean(window.ytInitialPlayerResponse.adPlacements);
+    </script><p>Initial player fixture</p>`,
+  );
+  await page.waitForFunction(() => Boolean(window.playerHeldReference?.streamingData));
+  expect(await page.evaluate(() => window.adsConsumedDuringBootstrap)).toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => window.playerHeldReference.adPlacements))
+    .toBeUndefined();
+  expect(
+    await page.evaluate(() => window.playerHeldReference === window.ytInitialPlayerResponse),
+  ).toBe(true);
+  expect(await page.evaluate(() => window.playerHeldReference.streamingData.formats)).toEqual([
+    'keep',
+  ]);
+  await expect
+    .poll(youtubeStatus)
+    .toMatchObject({ youtube: { enabled: true, hooks: { initial: true } } });
+  const status = await youtubeStatus();
+  expect(status.youtube.initialChanged).toBeGreaterThan(0);
+  const later = await page.evaluate(() => {
+    const value = { playerAds: [2], streamingData: { formats: ['later'] } };
+    window.ytInitialPlayerResponse = value;
+    return { ads: value.playerAds, formats: value.streamingData.formats };
+  });
+  expect(later).toEqual({ ads: undefined, formats: ['later'] });
+  await page.close();
+});
+
+test('YouTube get_watch ads are filtered before the caller reads the response', async () => {
+  await setSettings({ youtubeData: true });
+  const page = await context.newPage();
+  await page.route('https://www.youtube.com/**', (route) =>
+    route.request().url().includes('/youtubei/v1/get_watch')
+      ? route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            playerResponse: {
+              adSlots: [{ adSlotRenderer: {} }],
+              streamingData: { formats: ['keep'] },
+            },
+            contents: [{ adSlotRenderer: {} }, { videoRenderer: { videoId: 'organic' } }],
+          }),
+        })
+      : route.fulfill({ contentType: 'text/html', body: '<p>Get watch</p>' }),
+  );
+  await page.goto('https://www.youtube.com/watch?v=get-watch');
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async () => await (await fetch('/youtubei/v1/get_watch?prettyPrint=false')).json(),
+      ),
+    )
+    .toEqual({
+      playerResponse: { streamingData: { formats: ['keep'] } },
+      contents: [{ videoRenderer: { videoId: 'organic' } }],
+    });
+});
+
+test('early JSON hook stays absent when disabled or excluded by policy', async () => {
+  for (const patch of [
+    { youtubeData: false },
+    { youtubeData: true, disabledSites: ['youtube.com'] },
+    { youtubeData: true, sites: { youtube: false, facebook: true, tiktok: true } },
+  ]) {
+    await setSettings(patch);
+    const page = await fixture(
+      'https://www.youtube.com/watch?v=excluded-bootstrap',
+      '<script>window.ytInitialPlayerResponse = { adSlots: [1] }; window.initialAdsPresent = Boolean(window.ytInitialPlayerResponse.adSlots);</script>',
+    );
+    expect(await page.evaluate(() => window.initialAdsPresent)).toBe(true);
+    await expect.poll(youtubeStatus).toMatchObject({ youtube: null });
+    await page.close();
+  }
+});
+
+test('XHR text and JSON filtering preserves events, metadata, identity and native type errors', async () => {
+  await setSettings({ youtubeData: true });
+  const page = await context.newPage();
+  await page.route('https://www.youtube.com/**', (route) =>
+    route.request().url().includes('/youtubei/')
+      ? route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ playerAds: [1], streamingData: { formats: ['keep'] } }),
+        })
+      : route.fulfill({
+          contentType: 'text/html',
+          body: '<html><head><meta charset="utf-8"></head><body>XHR fixture</body></html>',
+        }),
+  );
+  await page.goto('https://www.youtube.com/watch?v=xhr');
+  await expect
+    .poll(youtubeStatus)
+    .toMatchObject({ youtube: { enabled: true, hooks: { xhr: true } } });
+  for (const type of ['', 'text', 'json']) {
+    const value = await page.evaluate(
+      (responseType) =>
+        new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.addEventListener('load', () => {
+            const response = xhr.response;
+            let error = null;
+            try {
+              void xhr.responseText;
+            } catch (exception) {
+              error = exception.name;
+            }
+            resolve({
+              status: xhr.status,
+              url: xhr.responseURL,
+              same: xhr.response === response,
+              error,
+              data: responseType === 'json' ? response : JSON.parse(xhr.responseText),
+            });
+          });
+          xhr.addEventListener('error', () => reject(new Error('XHR failed')));
+          xhr.open('GET', '/youtubei/v1/player');
+          xhr.responseType = responseType;
+          xhr.send();
+        }),
+      type,
+    );
+    expect(value).toEqual({
+      status: 200,
+      url: 'https://www.youtube.com/youtubei/v1/player',
+      same: true,
+      error: type === 'json' ? 'InvalidStateError' : null,
+      data: { streamingData: { formats: ['keep'] } },
+    });
+  }
+  const binary = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => resolve(JSON.parse(new TextDecoder().decode(xhr.response)).playerAds);
+        xhr.open('GET', '/youtubei/v1/player');
+        xhr.responseType = 'arraybuffer';
+        xhr.send();
+      }),
+  );
+  expect(binary).toEqual([1]);
+  const status = await youtubeStatus();
+  expect(status.youtube.xhrChanged).toBe(3);
+  expect(status.youtube.removedFields).toBeGreaterThanOrEqual(3);
+  expect(JSON.stringify(status.youtube)).not.toContain('streamingData');
+  await setSettings({ youtubeData: false });
+  await expect.poll(youtubeStatus).toMatchObject({ youtube: { enabled: false } });
+  const unfiltered = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => resolve(JSON.parse(xhr.responseText).playerAds);
+        xhr.open('GET', '/youtubei/v1/player');
+        xhr.send();
+      }),
+  );
+  expect(unfiltered).toEqual([1]);
+  await page.close();
+});
