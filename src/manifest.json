@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "minimum_chrome_version": "120",
   "name": "Home Content Blocker",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Chặn domain quảng cáo và lọc thành phần HTML trên YouTube, Facebook, TikTok và website khác.",
   "permissions": ["storage", "declarativeNetRequestWithHostAccess", "webRequest", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],

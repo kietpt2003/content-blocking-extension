@@ -21,6 +21,11 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
   Giữ thao tác Pause thủ công, không tự bấm Skip hoặc tua video. Tắt bộ lọc hoặc
   thêm ngoại lệ domain sẽ dừng xử lý và khôi phục các phần tử đang ẩn.
   Chỉ xử lý giao diện; không bảo đảm phát được khi máy chủ từ chối cấp nội dung.
+- **Khởi phát YouTube:** khi bật JSON YouTube, bản 0.1.14 phục hồi một lần nếu
+  player báo gián đoạn, video chưa nhận metadata sau 700 ms và vẫn đang yêu cầu phát.
+  Dùng API YouTube tải lại đúng video/vị trí, giữ queue playlist khi có đủ API khôi phục.
+  Không kích hoạt khi mạng chậm đơn thuần, video đã phát, người dùng Pause, livestream
+  hoặc nội dung cần đăng nhập/không phát được. Chẩn đoán có bộ đếm `startupRecoveries`.
 - **Facebook:** nhận diện bài trong feed qua marker quảng cáo, liên kết ad metadata
   và aria-label tài trợ tiếng Việt/Anh. Cột bên nhận diện heading Sponsored/Được tài trợ
   và các thẻ ảnh liên kết trong cùng một khối; giữ nguyên Contacts/Birthdays và các
@@ -52,7 +57,7 @@ Khi cập nhật từ ZIP cũ, Reload chỉ đọc lại thư mục đã nạp t
 bản ZIP mới vào đúng thư mục đó, hoặc nạp lại bằng **Load unpacked** và chọn
 `dist/extension` vừa build. Nếu nạp thư mục khác, tắt bản cũ để tránh chạy hai bản.
 Đóng tab YouTube cũ, mở tab mới rồi kiểm tra chẩn đoán: `extensionVersion`,
-`pageVersion` và `youtube.version` đều phải là `0.1.13`.
+`pageVersion` và `youtube.version` đều phải là `0.1.14`.
 
 Extension không dùng các cờ sideload tự động trên Chrome cá nhân. Chrome/Edge mới
 đã bỏ một số cờ này; kiểm thử dùng Chromium riêng của Playwright.

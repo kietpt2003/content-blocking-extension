@@ -1,3 +1,58 @@
+# Kết quả bản 0.1.14 — 31/10/2026
+
+## Tốc độ khởi phát YouTube trên Chrome/profile người dùng
+
+Đo bằng probe tạm trên tab YouTube tắt tiếng, cùng profile/cấu hình JSON đang bật.
+Chỉ ghi thời gian sự kiện, host/path API và media, kích thước, trạng thái phát;
+không lưu ID video/playlist, token, cookie hoặc nội dung response. Mốc đo ở
+startup của document/yt-navigate-start, kết thúc khi video phát sự kiện playing;
+không phải phép đo mọi mạng/tài khoản hay đầy đủ thời gian trước khi document tải.
+
+Hai mẫu gốc: 5.315 s khi mở và 5.356 s khi Next. Player API trả về sớm, media
+khởi động bằng response nhỏ rồi chờ khoảng 4 giây mới yêu cầu chunk có nội dung.
+Bộ lọc JSON không có dấu hiệu mất 3–5 giây trong các mẫu này.
+
+Nhánh thử native loadVideoById cùng video/vị trí: 1.855 s. Khi thêm điều kiện
+onSnackbarMessage=1 và còn readyState=0, mẫu thử đạt 2.006 s. Mã chính thức
+0.1.14 đo được 2.162 s và startupRecoveries=1, probe chỉ đo không tự phục hồi.
+Các mẫu tải bình thường sau đó: 0.987 / 1.241 / 1.031 s, startupRecoveries=0;
+không quy toàn bộ khác biệt của các mẫu không bị gián đoạn cho bản sửa.
+
+Cơ chế chỉ thực hiện một lần mỗi lần điều hướng khi chưa nhận metadata sau
+700 ms, video vẫn yêu cầu phát, phản hồi OK và có SABR stream. Giữ vị trí bắt đầu,
+không thao tác Skip/tua, không đổi playbackRate. Bỏ qua Pause, video đã nhận metadata,
+mid-playback buffering, ad-showing, livestream, lỗi/quyền đăng nhập và stale navigation.
+Phụ thuộc công tắc JSON YouTube; không tự bật JSON nếu người dùng đã tắt.
+
+Native loadVideoById xóa queue. Chỉ phục hồi playlist khi có đủ dữ liệu/API setter;
+kiểm tra lại trong 5 giây vì response /next đến muộn có thể xóa queue đã khôi phục.
+Thử trực tiếp xác nhận setter native có hiệu lực bất đồng bộ. Các mẫu tải bình thường
+cuối xác nhận native playlist khớp URL, index=0, playbackRate=1, paused=false.
+Race /next xóa queue lần nữa được kiểm chứng bằng unit test; chưa bắt lại được
+mẫu gián đoạn tự nhiên sau lần chỉnh cuối cửa sổ theo dõi playlist.
+
+Một guard so sánh cả URL ban đầu đã được sửa: YouTube tự bỏ tracking/autoplay
+parameters, nên so sánh đúng video/playlist và hủy khi điều hướng thực sự.
+
+Bằng chứng cục bộ:
+
+- artifacts/youtube-startup-baseline-1.json
+- artifacts/youtube-startup-baseline-2.json
+- artifacts/youtube-startup-experiment-reload.json
+- artifacts/youtube-startup-014-diagnostics.json
+- artifacts/youtube-startup-014-after-open.json
+- artifacts/youtube-startup-014-after-next-normal.json
+- artifacts/youtube-startup-014-normal-open.json
+- artifacts/youtube-startup-014-playlist-state.json
+- artifacts/youtube-startup-timing-summary.json
+
+Unit tests: 22/22 PASS. Browser fixtures Chromium: 27/27 PASS, bao gồm media WAV
+thật phát sau recovery, một lần recovery, Pause thủ công, bật/tắt policy và toàn bộ
+nhánh cũ. Format, git diff --check, build/package/ZIP: PASS. Probe và trang tạm
+không nằm trong ZIP. Bản đóng gói: artifacts/content-blocking-extension-0.1.14.zip.
+
+---
+
 # Kết quả bản 0.1.13 — 31/10/2026
 
 Bổ sung youtu.be vào NETWORK_DOMAINS để cấu hình hiện có tự nhận quy tắc khi

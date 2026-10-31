@@ -923,3 +923,48 @@ test('YouTube hides the live snackbar layout including its hit area and restores
   await expect(page.locator('#late-notice')).toBeHidden();
   await expect(page.locator('#saved')).toBeVisible();
 });
+
+test('YouTube startup recovers an interrupted empty stream once and starts real media', async () => {
+  await setSettings({ youtubeData: true });
+  const media = promptMedia().match(/src="([^"]+)"/u)[1];
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=startup-fixture',
+    `
+    <div id="movie_player"><video muted></video></div>
+    <script>
+      const player = document.querySelector('#movie_player');
+      const video = player.querySelector('video');
+      const nativeAdd = player.addEventListener.bind(player);
+      const nativeRemove = player.removeEventListener.bind(player);
+      player.addEventListener = (event, fn, ...args) => event === 'onSnackbarMessage' ? window.startupSignal = fn : nativeAdd(event, fn, ...args);
+      player.removeEventListener = (event, fn, ...args) => event === 'onSnackbarMessage' ? window.startupSignal = null : nativeRemove(event, fn, ...args);
+      player.getPlayerResponse = () => ({ videoDetails: { videoId: 'startup-fixture' }, playabilityStatus: { status: 'OK' }, streamingData: { serverAbrStreamingUrl: 'https://media.example.test/sabr' } });
+      player.getCurrentTime = () => 0;
+      player.getPlaylistId = () => null;
+      window.reloads = 0;
+      player.loadVideoById = (id, start) => {
+        window.reloads++;
+        window.reloadedVideo = { id, start };
+        video.src = ${JSON.stringify(media)};
+        void video.play().catch(() => {});
+      };
+      window.beginStartup = () => {
+        void video.play().catch(() => {});
+        video.dispatchEvent(new Event('waiting'));
+        window.startupSignal?.(1);
+      };
+    </script>`,
+  );
+  await page.evaluate(() => window.beginStartup());
+  await expect.poll(() => page.evaluate(() => window.reloads)).toBe(1);
+  expect(await page.evaluate(() => window.reloadedVideo)).toEqual({
+    id: 'startup-fixture',
+    start: 0,
+  });
+  await expect.poll(() => page.locator('video').evaluate((v) => v.currentTime)).toBeGreaterThan(0);
+  await page.locator('video').evaluate((v) => v.pause());
+  await page.evaluate(() => window.startupSignal?.(1));
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.reloads)).toBe(1);
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+});

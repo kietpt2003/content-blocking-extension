@@ -32,6 +32,7 @@ document.addEventListener('home-blocker:diagnostics', (event) => {
       'initialChanged',
       'removedFields',
       'unsupported',
+      'startupRecoveries',
     ]) {
       safe[key] =
         Number.isSafeInteger(value[key]) && value[key] >= 0 ? Math.min(value[key], 1000000) : 0;

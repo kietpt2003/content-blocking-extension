@@ -1,4 +1,5 @@
 import { version } from '../../package.json';
+import { YouTubeStartup } from './youtube-startup.js';
 import { isYouTubeApi, pruneYouTubeAds, pruneYouTubeAdsInPlace } from '../core/youtube-json.js';
 
 const LIMIT = 2 * 1024 * 1024;
@@ -15,8 +16,14 @@ const counters = {
   initialChanged: 0,
   removedFields: 0,
   unsupported: 0,
+  startupRecoveries: 0,
 };
 const hooks = { fetch: false, xhr: false, initial: false };
+const startup = new YouTubeStartup(document, () => {
+  counters.startupRecoveries++;
+  publish();
+});
+startup.configure(enabled);
 
 function publish() {
   document.dispatchEvent(
@@ -114,6 +121,7 @@ document.addEventListener('home-blocker:settings', (event) => {
     enabled = false;
   }
   generation++;
+  startup.configure(enabled);
   cleanInitialData();
   publish();
 });
