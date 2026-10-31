@@ -1,6 +1,7 @@
 import { DEFAULTS } from '../config/defaults.js';
-import { filteringEnabled, validateSettings } from '../core/settings.js';
+import { filteringEnabled, siteForHost, validateSettings } from '../core/settings.js';
 import { DomEngine } from './dom-engine.js';
+import { YouTubePrompts } from './youtube-prompts.js';
 
 let host = location.hostname;
 if (!host && document.referrer) {
@@ -11,6 +12,7 @@ if (!host && document.referrer) {
   }
 }
 const engine = new DomEngine(document, host);
+const youtubePrompts = siteForHost(host) === 'youtube' ? new YouTubePrompts(document) : null;
 let settings = structuredClone(DEFAULTS);
 let settingsLoaded = false;
 let youtubeDiagnostics = null;
@@ -61,6 +63,7 @@ function apply(value) {
   }
   settingsLoaded = true;
   engine.configure(settings, filteringEnabled(settings, host) && settings.cosmetic);
+  youtubePrompts?.configure(engine.active);
   sendPageState();
 }
 
@@ -91,11 +94,14 @@ chrome.runtime
   .then((result) => {
     if (result.ok) apply(result.settings);
   })
-  .catch(() => engine.stop());
+  .catch(() => {
+    engine.stop();
+    youtubePrompts?.stop();
+  });
 document.addEventListener(
   'DOMContentLoaded',
   () => {
-    if (settingsLoaded && !engine.active) apply(settings);
+    if (settingsLoaded) apply(settings);
   },
   { once: true },
 );

@@ -15,6 +15,12 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
 - **YouTube:** nhận diện ad slot, promoted/display renderers và overlay HTML. JSON mode
   nhận diện `/youtubei/v1/player`, `/next`, `/browse`; giữ nguyên dữ liệu streaming và
   playability. Không đọc URL stream để phát lại, không sửa trạng thái Premium hay DRM.
+- **Thông báo YouTube:** khi bật Ẩn thành phần HTML và YouTube, tự xác nhận
+  “Video paused. Continue watching?” và phát tiếp video bị tạm dừng bởi nhắc nhở;
+  ẩn “Experiencing interruptions?” và đóng/ẩn cảnh báo ad blocker nhận diện được.
+  Giữ thao tác Pause thủ công, không tự bấm Skip hoặc tua video. Tắt bộ lọc hoặc
+  thêm ngoại lệ domain sẽ dừng xử lý và khôi phục các phần tử đang ẩn.
+  Chỉ xử lý giao diện; không bảo đảm phát được khi máy chủ từ chối cấp nội dung.
 - **Facebook:** nhận diện bài trong feed qua marker quảng cáo, liên kết ad metadata
   và aria-label tài trợ tiếng Việt/Anh. Cột bên nhận diện heading Sponsored/Được tài trợ
   và các thẻ ảnh liên kết trong cùng một khối; giữ nguyên Contacts/Birthdays và các
@@ -46,7 +52,7 @@ Khi cập nhật từ ZIP cũ, Reload chỉ đọc lại thư mục đã nạp t
 bản ZIP mới vào đúng thư mục đó, hoặc nạp lại bằng **Load unpacked** và chọn
 `dist/extension` vừa build. Nếu nạp thư mục khác, tắt bản cũ để tránh chạy hai bản.
 Đóng tab YouTube cũ, mở tab mới rồi kiểm tra chẩn đoán: `extensionVersion`,
-`pageVersion` và `youtube.version` đều phải là `0.1.10`.
+`pageVersion` và `youtube.version` đều phải là `0.1.13`.
 
 Extension không dùng các cờ sideload tự động trên Chrome cá nhân. Chrome/Edge mới
 đã bỏ một số cờ này; kiểm thử dùng Chromium riêng của Playwright.
@@ -75,6 +81,9 @@ Khi trang tái sử dụng một bài cũ thành bài thường, bộ lọc ki�
 Lưu lượng đã bị Chrome chặn không thể tự khôi phục nếu không tải lại request/trang.
 
 ### Domain tùy chỉnh
+
+Từ bản 0.1.13, `youtu.be` đã có trong danh sách chặn mặc định; không cần nhập
+vào domain tùy chỉnh. Áp dụng cơ chế chặn tài nguyên trong trang như các domain mặc định khác.
 
 ```text
 ads.example.com

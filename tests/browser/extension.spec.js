@@ -698,3 +698,228 @@ test('XHR text and JSON filtering preserves events, metadata, identity and nativ
   expect(unfiltered).toEqual([1]);
   await page.close();
 });
+
+function promptMedia() {
+  const wav = Buffer.alloc(44 + 320000);
+  wav.write('RIFF');
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24);
+  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write('data', 36);
+  wav.writeUInt32LE(wav.length - 44, 40);
+  return `<div id="movie_player"><video muted preload="auto" src="data:audio/wav;base64,${wav.toString('base64')}"></video></div>`;
+}
+
+test('YouTube idle confirmation resumes real media, repeats after navigation and preserves manual pause', async () => {
+  const page = await fixture('https://www.youtube.com/watch?v=idle', promptMedia());
+  await page.locator('video').evaluate(async (video) => {
+    await video.play();
+    video.pause();
+  });
+  const showIdle = () =>
+    page.evaluate(() => {
+      const dialog = document.createElement('tp-yt-paper-dialog');
+      dialog.id = 'idle';
+      dialog.innerHTML =
+        '<yt-confirm-dialog-renderer>Video paused. Continue watching?<div id="confirm-button"><button>Yes</button></div></yt-confirm-dialog-renderer>';
+      dialog.querySelector('button').onclick = () => {
+        window.confirmations = (window.confirmations || 0) + 1;
+        dialog.remove();
+      };
+      document.body.append(dialog);
+    });
+  await showIdle();
+  await expect.poll(() => page.evaluate(() => window.confirmations)).toBe(1);
+  await expect.poll(() => page.locator('video').evaluate((v) => v.paused)).toBe(false);
+  await expect.poll(() => page.locator('video').evaluate((v) => v.currentTime)).toBeGreaterThan(0);
+  await page.locator('video').evaluate((v) => v.pause());
+  await page.waitForTimeout(1300);
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+  await page.evaluate(() => history.pushState({}, '', '/watch?v=idle-next'));
+  await showIdle();
+  await expect.poll(() => page.evaluate(() => window.confirmations)).toBe(2);
+  await expect.poll(() => page.locator('video').evaluate((v) => v.paused)).toBe(false);
+});
+
+test('YouTube handles late idle controls and Vietnamese prompts without resuming ad media', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=idle-late',
+    `${promptMedia()}
+    <tp-yt-paper-dialog id="idle"><yt-confirm-dialog-renderer>Video đã tạm dừng. Tiếp tục xem?</yt-confirm-dialog-renderer></tp-yt-paper-dialog>`,
+  );
+  await expect(page.locator('#idle')).toBeHidden();
+  await page.evaluate(() => {
+    document.querySelector('#movie_player').classList.add('ad-showing');
+    const button = document.createElement('button');
+    button.textContent = 'Có';
+    button.onclick = () => {
+      window.idleClicked = true;
+      document.querySelector('#idle').hidden = true;
+    };
+    document.querySelector('yt-confirm-dialog-renderer').append(button);
+  });
+  await expect.poll(() => page.evaluate(() => window.idleClicked)).toBe(true);
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+});
+
+test('YouTube hides interruption toasts, restores recycled notifications and respects disable settings', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=toast',
+    `
+    <tp-yt-paper-toast id="notice" style="display:block">Experiencing interruptions?</tp-yt-paper-toast>
+    <div id="movie_player"><div class="ytp-suggested-action" id="badge">Experiencing interruptions?</div></div>
+    <ytd-comment-renderer id="comment">Experiencing interruptions? Ad blockers are not allowed on YouTube</ytd-comment-renderer>
+    <tp-yt-paper-toast id="saved">Saved to playlist</tp-yt-paper-toast>`,
+  );
+  await expect(page.locator('#notice')).toBeHidden();
+  await expect(page.locator('#badge')).toBeHidden();
+  await expect(page.locator('#comment')).toBeVisible();
+  await expect(page.locator('#saved')).toBeVisible();
+  await page.locator('#notice').evaluate((node) => {
+    node.textContent = 'Added to queue';
+  });
+  await expect(page.locator('#notice')).toBeVisible();
+  expect(await page.locator('#notice').evaluate((node) => node.style.display)).toBe('block');
+  for (const patch of [
+    { enabled: false },
+    { cosmetic: false },
+    { sites: { youtube: false, facebook: true, tiktok: true } },
+    { disabledSites: ['youtube.com'] },
+  ]) {
+    await setSettings(patch);
+    await expect(page.locator('#badge')).toBeVisible();
+    await setSettings();
+    await expect(page.locator('#badge')).toBeHidden();
+  }
+});
+
+test('YouTube dismisses ad blocker dialogs without choosing Allow ads and preserves other dialogs', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=ad-warning',
+    `
+    <tp-yt-iron-overlay-backdrop style="display:block">Backdrop</tp-yt-iron-overlay-backdrop>
+    <tp-yt-paper-dialog id="warning"><ytd-enforcement-message-view-model>Ad blockers are not allowed on YouTube
+      <button onclick="window.allowed = true">Allow ads</button>
+      <button aria-label="Close" onclick="window.closedWarning = true; this.closest('tp-yt-paper-dialog').hidden = true">X</button>
+    </ytd-enforcement-message-view-model></tp-yt-paper-dialog>`,
+  );
+  await expect.poll(() => page.evaluate(() => window.closedWarning)).toBe(true);
+  await expect(page.locator('#warning')).toBeHidden();
+  expect(await page.evaluate(() => window.allowed)).toBeUndefined();
+  // An enforcement surface without a close control still hides its own modal/backdrop.
+  await page.evaluate(() => {
+    document.body.style.overflow = 'hidden';
+    document.querySelector('#warning').remove();
+    const dialog = document.createElement('tp-yt-paper-dialog');
+    dialog.id = 'new-warning';
+    dialog.innerHTML =
+      '<ytd-enforcement-message-view-model>Ad blockers violate YouTube terms</ytd-enforcement-message-view-model>';
+    document.body.append(dialog);
+  });
+  await expect(page.locator('#new-warning')).toBeHidden();
+  await expect(page.locator('body')).toHaveCSS('overflow', 'auto');
+  await expect(page.locator('tp-yt-iron-overlay-backdrop')).toBeHidden();
+  await page.evaluate(() => {
+    const dialog = document.createElement('div');
+    dialog.id = 'share';
+    dialog.setAttribute('role', 'dialog');
+    dialog.textContent = 'Share video';
+    document.body.append(dialog);
+  });
+  await expect(page.locator('#share')).toBeVisible();
+  await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+  await expect(page.locator('tp-yt-iron-overlay-backdrop')).toBeVisible();
+  await setSettings({ cosmetic: false });
+  await expect(page.locator('#new-warning')).toBeVisible();
+});
+
+test('YouTube prompt logic leaves other hosts and hidden idle templates untouched', async () => {
+  for (const host of ['www.youtube.com', 'news.example.com']) {
+    const page = await fixture(
+      `https://${host}/watch?v=hidden-idle`,
+      `${promptMedia()}
+      <div role="dialog" id="template" hidden>Video paused. Continue watching?<button onclick="window.templateClicked = true">Yes</button></div>
+      <tp-yt-paper-toast id="notice">Experiencing interruptions?</tp-yt-paper-toast>`,
+    );
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(() => window.templateClicked)).toBeUndefined();
+    expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+    if (host === 'news.example.com') await expect(page.locator('#notice')).toBeVisible();
+    await page.close();
+  }
+});
+
+test('YouTube reuses idle dialogs and does not confirm while the site is disabled', async () => {
+  await setSettings({ disabledSites: ['youtube.com'] });
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=idle-reuse',
+    `
+    <tp-yt-paper-dialog id="idle"><yt-confirm-dialog-renderer>Video paused. Continue watching?
+      <button onclick="window.confirmations++; document.querySelector('#idle').hidden = true">Yes</button>
+    </yt-confirm-dialog-renderer></tp-yt-paper-dialog><script>window.confirmations = 0</script>`,
+  );
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => window.confirmations)).toBe(0);
+  await expect(page.locator('#idle')).toBeVisible();
+  await setSettings();
+  await expect.poll(() => page.evaluate(() => window.confirmations)).toBe(1);
+  // Let the observer see the native hidden state before YouTube reopens the same node.
+  await page.waitForTimeout(100);
+  await page.locator('#idle').evaluate((node) => {
+    node.hidden = false;
+  });
+  await expect.poll(() => page.evaluate(() => window.confirmations)).toBe(2);
+});
+
+test('YouTube hides the live snackbar layout including its hit area and restores recycled messages', async () => {
+  const page = await fixture(
+    'https://www.youtube.com/watch?v=live-snackbar',
+    `
+    <snackbar-container class="ytSnackbarContainerHost">
+      <div id="notice" class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened" style="display:flex">
+        <snackbar-view-model class="snackbarViewModelHost snackbarViewModelSwipeable">
+          <div class="snackbarViewModelEngagementBarWrapper"><div class="snackbarViewModelTitleSubtextWrapper">
+            <div class="snackbarViewModelTitle"><span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Experiencing interruptions?</span></div>
+          </div></div>
+        </snackbar-view-model>
+      </div>
+      <div id="saved" class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened"><snackbar-view-model>Saved to playlist</snackbar-view-model></div>
+    </snackbar-container>
+    <yt-ephemeral-actions aria-live="polite"></yt-ephemeral-actions>
+    <div id="movie_player"><video></video><button>Play</button></div>`,
+  );
+  await expect(page.locator('#notice')).toBeHidden();
+  expect(await page.locator('#notice').evaluate((node) => node.getBoundingClientRect().width)).toBe(
+    0,
+  );
+  await expect(page.locator('#saved')).toBeVisible();
+  await expect(page.locator('#movie_player')).toBeVisible();
+  await page.locator('.snackbarViewModelTitle span').evaluate((node) => {
+    node.textContent = 'Added to queue';
+  });
+  await expect(page.locator('#notice')).toBeVisible();
+  expect(await page.locator('#notice').evaluate((node) => node.style.display)).toBe('flex');
+  await page.locator('.snackbarViewModelTitle span').evaluate((node) => {
+    node.textContent = 'Experiencing interruptions?';
+  });
+  await expect(page.locator('#notice')).toBeHidden();
+  await setSettings({ cosmetic: false });
+  await expect(page.locator('#notice')).toBeVisible();
+  await setSettings();
+  await expect(page.locator('#notice')).toBeHidden();
+  await page.evaluate(() => {
+    document.querySelector('#notice').remove();
+    const notice = document.createElement('snackbar-view-model');
+    notice.id = 'late-notice';
+    notice.textContent = 'Experiencing interruptions?';
+    document.querySelector('snackbar-container').append(notice);
+  });
+  await expect(page.locator('#late-notice')).toBeHidden();
+  await expect(page.locator('#saved')).toBeVisible();
+});

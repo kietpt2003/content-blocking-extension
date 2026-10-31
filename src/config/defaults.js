@@ -17,6 +17,7 @@ export const DEFAULTS = {
 };
 
 export const NETWORK_DOMAINS = [
+  'youtu.be',
   'doubleclick.net',
   'googlesyndication.com',
   'googleadservices.com',

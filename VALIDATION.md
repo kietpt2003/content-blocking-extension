@@ -1,3 +1,97 @@
+# Kết quả bản 0.1.13 — 31/10/2026
+
+Bổ sung youtu.be vào NETWORK_DOMAINS để cấu hình hiện có tự nhận quy tắc khi
+extension được nạp lại, không cần thêm vào customDomains. Giữ cơ chế hiện có:
+chặn tài nguyên trong trang, cho phép điều hướng main_frame; giữ công tắc mạng
+và các ngoại lệ. Domain đã có trong customDomains được gộp, không sinh rule trùng.
+
+Unit tests 16/16, format, build, package, git diff --check và kiểm tra rule mặc
+định/gộp trùng/tắt mạng: PASS. Chưa kiểm tra request youtu.be trên Chrome thật
+trong lần cập nhật này. Bản ZIP: artifacts/content-blocking-extension-0.1.13.zip.
+
+---
+
+# Kết quả bản 0.1.12 — 31/10/2026
+
+- Unit tests: 16/16 PASS; Chromium extension browser tests: 26/26 PASS.
+- Format, `git diff --check`, build, package và kiểm tra ZIP: PASS.
+
+## Chẩn đoán trực tiếp “Experiencing interruptions?” trên Chrome/profile người dùng
+
+Sau khi người dùng bật JavaScript from Apple Events, kiểm tra Chrome đang nạp
+đúng thư mục dist/extension, phiên bản 0.1.11, enabled/cosmetic/YouTube đều true,
+JSON đang bật, không có ngoại lệ domain. Bắt được thông báo thật hiển thị bằng
+`snackbar-view-model` bên trong `.ytSnackbarContainerSnackbarContainer`, nằm dưới
+`snackbar-container`. Cả snackbar và wrapper có computed display=block; đây là
+cấu trúc chưa có trong danh sách surface của 0.1.11.
+
+Bổ sung selector cho wrapper mới và snackbar-view-model, giữ nhận diện text trong
+surface. Ẩn cả vùng chứa để không để lại khung chắn thao tác; toast không liên quan
+và node tái sử dụng cho Added to queue vẫn hiển thị. Regression test dùng cấu trúc
+DOM thật FAIL trên 0.1.11, PASS trên 0.1.12. Có kiểm tra display ban đầu được khôi
+phục, tắt/bật lọc HTML và snackbar được thêm muộn.
+
+Đã Reload extension trong Chrome/profile hiện tại và tải lại tab YouTube, lưu và
+khôi phục vị trí/trạng thái phát. Xác nhận extension và MAIN script đều 0.1.12.
+Mở tab kiểm tra riêng cùng profile, tắt tiếng và chuyển video bằng nút Next thật:
+YouTube tự phát sinh lại “Experiencing interruptions?”. Các mẫu observer xác nhận
+snackbar-view-model và wrapper Opened/Closed đều display:none !important; video
+paused=false, readyState=4 và currentTime tiếp tục tăng. Không chèn snackbar giả
+trong lần kiểm chứng trực tiếp này.
+
+Bằng chứng cục bộ chỉ chứa nhãn thông báo, cấu trúc/style DOM và trạng thái phát:
+
+- artifacts/youtube-prompts-011-live-before.json
+- artifacts/youtube-prompts-012-live-after.json
+- artifacts/youtube-prompts-012-live-version.json
+
+Các tab/file chẩn đoán tạm được dọn; không đưa mã chẩn đoán vào ZIP phát hành.
+Kết quả trực tiếp này xác nhận snackbar gián đoạn đã được ẩn trong tình huống quan
+sát được; không khẳng định sửa mọi nguyên nhân buffering từ máy chủ. Hai loại
+hộp thoại idle/ad blocker còn được kiểm chứng bằng browser fixtures như bản 0.1.11.
+Bản đóng gói: artifacts/content-blocking-extension-0.1.12.zip.
+
+---
+
+# Kết quả bản 0.1.11 — 31/10/2026
+
+- Unit tests: 16/16 PASS.
+- Browser tests nạp extension thật vào Chromium: 25/25 PASS.
+- Format và `git diff --check`: PASS.
+
+## Thông báo và nhắc nhở YouTube
+
+Bổ sung bộ xử lý trong content script, chỉ chạy trên YouTube khi bật lọc HTML
+và bộ lọc của website. Không phụ thuộc chế độ JSON thử nghiệm.
+
+- Tự xác nhận “Video paused. Continue watching?” / “Tiếp tục xem?” và gọi phát
+  tiếp khi video bị pause cùng lúc nhắc nhở. Không gọi play cho video đã kết thúc
+  hoặc player đang ad-showing/ad-interrupting. Giữ Pause thủ công sau khi xử lý.
+- Chỉ đọc text trong toast, dialog và các surface riêng của player. Ẩn thông báo
+  “Experiencing interruptions?”; giữ toast Saved to playlist/Added to queue,
+  bình luận thường và hộp thoại Share.
+- Đóng cảnh báo ad blocker qua nút Close/Dismiss nhận diện được; ẩn surface/modal
+  nếu không có nút đóng. Không chọn Allow ads hoặc Premium. Chỉ ẩn backdrop và
+  mở khóa cuộn khi không có hộp thoại khác đang hiển thị.
+- Giữ node để trang hoàn tất lifecycle. Khôi phục style khi tái sử dụng node cho
+  nội dung thường, tắt extension/HTML/YouTube hoặc áp dụng ngoại lệ domain.
+- MutationObserver xử lý trước lần vẽ tiếp theo khi đã có cấu hình; quét mỗi
+  giây để xử lý nút/listener xuất hiện muộn. Không giả lập hoạt động người dùng.
+
+Browser fixtures xác nhận media WAV thật được phát tiếp và currentTime tăng,
+Pause thủ công vẫn giữ, điều hướng SPA vẫn xử lý nhắc nhở mới, cùng một dialog
+được mở lại vẫn xác nhận được. Có kiểm tra controls tải muộn, nhãn Việt/Anh,
+không xác nhận template đang hidden, không chạy trên host khác, khôi phục display,
+backdrop và overflow khi có dialog khác.
+
+Chưa tái hiện ba thông báo trong phiên YouTube đăng nhập thực tế của người dùng.
+Các kiểm thử trên xác nhận hành vi fixture; ẩn cảnh báo không khắc phục việc máy
+chủ từ chối cấp nội dung hoặc buffering do mạng. Autoplay vẫn chịu chính sách
+của trình duyệt. Bản đóng gói: artifacts/content-blocking-extension-0.1.11.zip;
+Load unpacked: dist/extension.
+
+---
+
 # Kết quả bản 0.1.10 — 25/10/2026
 
 - Unit tests: 16/16 PASS.
