@@ -10,7 +10,7 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
 | ------------ | ------------------------------------------------------------------------------------------------------ |
 | Network      | Chrome `declarativeNetRequest` chặn domain và endpoint quảng cáo/tracking được nhận diện               |
 | HTML/DOM     | Quan sát trang động bằng MutationObserver, ẩn ad slot và bài có metadata quảng cáo                     |
-| YouTube JSON | Thử nghiệm, mặc định tắt: lọc dữ liệu trình phát ban đầu và một số response fetch/XHR JSON của YouTube |
+| YouTube JSON | Thử nghiệm, mặc định bật: lọc dữ liệu trình phát ban đầu và một số response fetch/XHR JSON của YouTube |
 
 - **YouTube:** nhận diện ad slot, promoted/display renderers và overlay HTML. JSON mode
   nhận diện `/youtubei/v1/player`, `/next`, `/browse`; giữ nguyên dữ liệu streaming và
@@ -166,7 +166,8 @@ thiết bị TV hay các máy khác chỉ nhờ chung Wi-Fi.
 
 ## Chế độ JSON YouTube
 
-Tùy chọn **Thử nghiệm: JSON YouTube** mặc định tắt. Từ bản 0.1.9, khi bật,
+Tùy chọn **Thử nghiệm: JSON YouTube** mặc định bật khi cài mới hoặc đặt lại cấu hình;
+cài đặt đã lưu được giữ nguyên. Từ bản 0.1.9, khi bật,
 background đăng ký hook MAIN tại document_start bằng chrome.scripting, trước
 khi inline player bootstrap đọc quảng cáo. Không đăng ký khi JSON tắt, công tắc
 chung/YouTube tắt; excludeMatches áp dụng ngoại lệ domain. Khi đổi cấu hình cần

@@ -3,9 +3,10 @@ import test from 'node:test';
 import { DEFAULTS } from '../../src/config/defaults.js';
 import { youtubePageScript, applyYouTubePageScript } from '../../src/core/page-scripts.js';
 
-test('early MAIN hook is registered only for explicitly enabled JSON policy and respects exceptions', () => {
-  assert.equal(youtubePageScript(DEFAULTS), null);
+test('early MAIN hook is registered by default and respects disabled policy and exceptions', () => {
+  assert.equal(youtubePageScript(DEFAULTS).runAt, 'document_start');
   for (const settings of [
+    { ...DEFAULTS, youtubeData: false },
     { ...DEFAULTS, youtubeData: true, enabled: false },
     { ...DEFAULTS, youtubeData: true, sites: { ...DEFAULTS.sites, youtube: false } },
   ])
@@ -44,6 +45,6 @@ test('policy updates replace the same registered hook and unregister it when dis
     scripting,
   );
   assert(existing.excludeMatches.includes('https://*.youtube.com/*'));
-  await applyYouTubePageScript(DEFAULTS, scripting);
+  await applyYouTubePageScript({ ...DEFAULTS, youtubeData: false }, scripting);
   assert.deepEqual(calls, ['register', 'update', 'unregister']);
 });

@@ -9,7 +9,7 @@ export const DEFAULTS = {
   enabled: true,
   network: true,
   cosmetic: true,
-  youtubeData: false,
+  youtubeData: true,
   sites: { youtube: true, facebook: true, tiktok: true },
   disabledSites: [],
   customDomains: [],
