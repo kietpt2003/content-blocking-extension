@@ -1,4 +1,9 @@
-import { GENERIC_SELECTORS, YOUTUBE_SELECTORS, VLXX_SELECTORS } from '../config/defaults.js';
+import {
+  GENERIC_SELECTORS,
+  YOUTUBE_SELECTORS,
+  VLXX_SELECTORS,
+  VIET69_SELECTORS,
+} from '../config/defaults.js';
 import { domainMatches, siteForHost } from '../core/settings.js';
 import { youtubeSkipControls } from './youtube-controls.js';
 import {
@@ -33,9 +38,10 @@ export function reasonFor(element, host, settings) {
     if (domainMatches(host, rule.domain) && safeMatch(element, rule.selector)) return 'custom';
   }
   const site = siteForHost(host);
-  if (site === 'vlxx' && VLXX_SELECTORS.some((selector) => safeMatch(element, selector))) {
-    return 'vlxx';
-  }
+  if (site === 'vlxx' && VLXX_SELECTORS.some((selector) => safeMatch(element, selector)))
+    return site;
+  if (site === 'viet69' && VIET69_SELECTORS.some((selector) => safeMatch(element, selector)))
+    return site;
   if (site === 'facebook' && isFacebookSidebarAd(element)) return 'facebook';
   if (site === 'youtube' && YOUTUBE_SELECTORS.some((selector) => safeMatch(element, selector))) {
     // YouTube can put Skip inside the overlay. Hiding that ancestor also makes
@@ -88,6 +94,7 @@ export function candidateSelectors(host, settings) {
   const site = siteForHost(host);
   if (site === 'youtube') selectors.push(...YOUTUBE_SELECTORS);
   if (site === 'vlxx') selectors.push(...VLXX_SELECTORS);
+  if (site === 'viet69') selectors.push(...VIET69_SELECTORS);
   if (site === 'facebook')
     selectors.push('[role="article"]', '[data-pagelet^="FeedUnit_"]', FACEBOOK_SIDEBAR_HEADINGS);
   if (site === 'tiktok')

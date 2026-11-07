@@ -247,6 +247,129 @@ test('VLXX blocks popunder scripts and supplies an empty schedule without stalli
   }
 });
 
+test('Viet69 switch blocks click ads, restores banners and preserves its iframe player', async () => {
+  const page = await context.newPage();
+  await page.route('**/*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.hostname === 'cdn2.vietadx.net') {
+      return route.fulfill({
+        contentType: 'application/javascript',
+        body: `
+        window.fixtureAdLoaded=true;
+        document.addEventListener('click',()=>window.fixtureAdClicks=(window.fixtureAdClicks||0)+1);
+      `,
+      });
+    }
+    return route.fulfill({
+      contentType: 'text/html',
+      body:
+        url.hostname === 'emb.cd-vs.com'
+          ? '<button id="play" onclick="window.fixturePlaying=true">Play</button>'
+          : `<div id="vl-top-adx">Banner</div><div id="vl-underplayer-adx">Banner</div>
+        <div class="catfish-bottom">Floating banner</div><div class="banner-preload">Popup</div>
+        <button id="content">Content action</button>
+        <script src="https://cdn2.vietadx.net/v/v-main-adx.js?v=123"></script>
+        <iframe src="https://emb.cd-vs.com/embed/fixture"></iframe>`,
+    });
+  });
+  await page.goto('https://viet69.be/fixture/');
+  await page.locator('#content').click();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
+  expect(await page.evaluate(() => window.fixtureAdClicks)).toBeUndefined();
+  for (const selector of [
+    '#vl-top-adx',
+    '#vl-underplayer-adx',
+    '.catfish-bottom',
+    '.banner-preload',
+  ]) {
+    await expect(page.locator(selector)).toBeHidden();
+  }
+  await page.frameLocator('iframe').locator('#play').click();
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe')
+        .locator('#play')
+        .evaluate(() => window.fixturePlaying),
+    )
+    .toBe(true);
+  await control.reload();
+  await expect(control.locator('#viet69')).toBeChecked();
+  await control.locator('#viet69').uncheck();
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  await expect(page.locator('#vl-top-adx')).toBeVisible();
+  await page.reload();
+  await page.locator('#content').click();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  expect(await page.evaluate(() => window.fixtureAdClicks)).toBe(1);
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.locator('#viet69')).not.toBeChecked();
+  await popup.locator('#viet69').check();
+  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC Viet69');
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
+  await expect(page.locator('#vl-top-adx')).toBeHidden();
+  await setSettings({ disabledSites: ['viet69.be'] });
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  await expect(page.locator('#vl-top-adx')).toBeVisible();
+  await setSettings();
+  await page.goto('https://news.example.com/fixture/');
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  await expect(page.locator('#vl-top-adx')).toBeVisible();
+});
+
+test('Viet69 hides the live related-before banner and recycled slots without hiding content', async () => {
+  const page = await fixture(
+    'https://viet69.be/fixture/banner',
+    `
+    <div id="player"><video></video></div>
+    <div class="app-ad app-ad--related-before" id="remaining-ad">
+      <div id="__clb-spot_1926112_qts_1"><iframe id="__clb-spot_1926112_qts_1_container"></iframe></div>
+    </div>
+    <div class="app-advertisement-guide" id="content">Content</div>`,
+  );
+  await expect(page.locator('#remaining-ad')).toBeHidden();
+  await expect(page.locator('#player')).toBeVisible();
+  await expect(page.locator('#content')).toBeVisible();
+  await page.route('https://vertigovitalitywieldable.com/**', (route) =>
+    route.fulfill({
+      contentType: 'text/plain',
+      body: 'allowed',
+      headers: { 'access-control-allow-origin': '*' },
+    }),
+  );
+  const fetchAd = () =>
+    page.evaluate(async () => {
+      try {
+        return await (await fetch('https://vertigovitalitywieldable.com/bn.js')).text();
+      } catch {
+        return 'blocked';
+      }
+    });
+  expect(await fetchAd()).toBe('blocked');
+  await page.evaluate(() => {
+    const ad = document.createElement('div');
+    ad.className = 'app-ad app-ad--related-before';
+    ad.id = 'late-ad';
+    ad.textContent = 'Late banner';
+    document.body.append(ad);
+  });
+  await expect(page.locator('#late-ad')).toBeHidden();
+  await setSettings({ sites: { ...DEFAULTS.sites, viet69: false } });
+  await expect(page.locator('#remaining-ad')).toBeVisible();
+  await expect(page.locator('#late-ad')).toBeVisible();
+  expect(await fetchAd()).toBe('allowed');
+  await setSettings();
+  await expect(page.locator('#remaining-ad')).toBeHidden();
+  await page.evaluate(() => (document.querySelector('#late-ad').className = 'ordinary'));
+  await expect(page.locator('#late-ad')).toBeVisible();
+  await page.goto('https://vlxx.app/fixture/banner');
+  await expect(page.locator('#remaining-ad')).toBeVisible();
+});
+
 test('Facebook hides marked ads, keeps ordinary text, and handles recycled/lazy feed nodes', async () => {
   const page = await fixture(
     'https://www.facebook.com/__fixture__',

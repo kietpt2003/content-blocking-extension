@@ -49,6 +49,16 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
   Cần bật Chặn domain / URL cho phần player/popup và Ẩn thành phần HTML cho các
   vị trí banner. Tải lại clip sau khi đổi công tắc. Ngoại lệ website vẫn được ưu tiên.
   `vlxx.phd` hiện chuyển hướng sang `vlxx.app`; bộ lọc nhận diện cả hai tên miền.
+- **Viet69 (`viet69.be`):** công tắc **Chặn QC Viet69** ở popup và trang cài đặt,
+  mặc định bật. Chặn ba script quảng cáo đã quan sát trên `cdn2.vietadx.net/v/`
+  (`v-main-adx.js`, `v-top-adx.js`, `v-underplayer-adx.js`) để ngăn banner và
+  popunder/click hijack; ẩn các vùng banner theo DOM đã nhận diện.
+  Chặn thêm nguồn banner `vertigovitalitywieldable.com` theo initiator Viet69
+  và các slot `.app-ad`, gồm banner iframe phía dưới video/trước nội dung liên quan.
+  Giữ API `get.video.php`, thư viện/site assets và iframe `emb.cd-vs.com`.
+  Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.
+  Chưa xác nhận phát clip thật trong môi trường kiểm tra do player đang gặp lỗi
+  JavaScript cả khi chưa dùng bộ lọc; không coi iframe fixture là bằng chứng phát video thật.
 - **Website khác:** domain quảng cáo chung, ad slot phổ biến và CSS selector do bạn thêm.
 
 Đây là bộ quy tắc khởi đầu có thể mở rộng, **không phải bản sao uBlock Origin** và

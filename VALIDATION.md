@@ -1,3 +1,44 @@
+# Bổ sung Viet69 — 07/11/2026 (giữ version 0.1.14)
+
+## Banner còn sót dưới video trong tab người dùng
+
+- Đã kiểm tra trực tiếp tab Viet69 ẩn danh mà người dùng đang mở: vùng
+  `.app-ad.app-ad--related-before` cao khoảng 257 px, chứa iframe
+  `__clb-spot_1926112_qts_1_container` cao 250 px. Đây là nguồn quảng cáo khác
+  ba script vietadx đã xử lý, không phải vùng player.
+- Trang nạp `https://vertigovitalitywieldable.com/bn.js`; iframe chứa ảnh cùng
+  hostname. Bổ sung rule cho subresource từ domain này, chỉ initiator Viet69;
+  giữ điều hướng main_frame và các website khác. Thêm `.app-ad` vào bộ selector
+  riêng Viet69, không áp dụng selector này cho VLXX.
+- Kiểm thử bổ sung bao phủ iframe/banner cũ, slot được thêm muộn, khôi phục khi
+  tắt Viet69, đổi class tái sử dụng, không ẩn player/nội dung và không chặn trên
+  VLXX. Unit suite: 32/32, browser suite: 32/32, format check đạt.
+- Đã nạp lại extension và tải lại đúng tab người dùng (video đang dừng ở giây 0).
+  Kiểm tra DOM thật sau cập nhật: slot related-before có display=none, height=0,
+  marker `data-content-blocker-hidden=viet69`, 0 iframe quảng cáo còn hiển thị.
+  Video vẫn hiện kích thước khoảng 598 x 336 px, readyState=4, paused=true, time=0.
+
+- Đã kiểm tra HTML trang chủ/trang clip, request và mã script quảng cáo công khai.
+  Nguồn quảng cáo là `cdn2.vietadx.net/v/v-main-adx.js`, `v-top-adx.js` và
+  `v-underplayer-adx.js`; script main cài các handler click/popunder, banner preload
+  và catfish. Các container dùng cùng ID/class với bộ lọc VLXX hiện có.
+- Quy tắc mới chỉ chặn ba script này, loại script, initiator `viet69.be`.
+  Không chặn CDN giao diện `cdn.viedn.net`, API `get.video.php`, thư viện player
+  hoặc iframe `emb.cd-vs.com`. DOM chỉ nhận diện container trên domain Viet69.
+- Công tắc **Chặn QC Viet69** có ở popup/options, mặc định true, cấu hình cũ
+  giữ lựa chọn website khác. Tải lại sau khi đổi; ngoại lệ domain được ưu tiên.
+- Kiểm tra trực tiếp trong Chromium tạm với extension thật: 3 request quảng cáo
+  bị chặn, 0 script quảng cáo tải thành công, 0 popup và 0 banner top/underplayer/
+  preload/catfish nhìn thấy. API player trả 200 và iframe vẫn được nạp.
+- Giới hạn: cả mẫu chưa dùng extension và mẫu có extension đều không tạo video
+  trong iframe sau khi bấm cover. Đã thử hai nút server của trang (cùng provider).
+  Mẫu có extension ghi nhận `jwplayer is not defined` và lỗi gọi kết quả console.log
+  như hàm từ script inline của trang. Không sửa lỗi player/anti-debug của website
+  hoặc khẳng định đã chặn mọi quảng cáo trong video khi chưa phát được clip thực.
+- `npm test`: 31/31; `npm run check`: đạt; browser suite: 31/31. Fixture mới kiểm tra
+  click trong iframe, script quảng cáo, banner, công tắc options/popup, lưu cấu hình,
+  ngoại lệ domain và không áp dụng rule Viet69 cho website khác.
+
 # Bổ sung VLXX — 07/11/2026 (giữ version 0.1.14)
 
 - Đã kiểm tra HTML, request AJAX và iframe trên trang thật. `vlxx.phd` trả 301 sang

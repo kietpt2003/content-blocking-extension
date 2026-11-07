@@ -4,6 +4,7 @@ export const SITE_DOMAINS = {
   tiktok: ['tiktok.com'],
   xvideos: ['xvideos.com'],
   vlxx: ['vlxx.app', 'vlxx.phd'],
+  viet69: ['viet69.be'],
 };
 
 export const DEFAULTS = {
@@ -12,7 +13,7 @@ export const DEFAULTS = {
   network: true,
   cosmetic: true,
   youtubeData: true,
-  sites: { youtube: true, facebook: true, tiktok: true, xvideos: true, vlxx: true },
+  sites: { youtube: true, facebook: true, tiktok: true, xvideos: true, vlxx: true, viet69: true },
   disabledSites: [],
   customDomains: [],
   customCosmetic: [],
@@ -32,6 +33,20 @@ export const NETWORK_DOMAINS = [
 ];
 
 export const NETWORK_PATHS = [
+  {
+    // Live Viet69 .app-ad slot: bn.js creates the __clb-spot iframe and images.
+    domains: ['vertigovitalitywieldable.com'],
+    initiatorDomains: ['viet69.be'],
+    regex: '^https://([^/]+\\.)?vertigovitalitywieldable\\.com/',
+  },
+  {
+    // Observed Viet69 banner and click/popunder scripts. Keep the player API,
+    // emb.cd-vs.com iframe and cdn.viedn.net site/player assets available.
+    domains: ['cdn2.vietadx.net'],
+    initiatorDomains: ['viet69.be'],
+    resourceTypes: ['script'],
+    regex: '^https://cdn2\\.vietadx\\.net/v/v-(main|top|underplayer)-adx\\.js(?:\\?|$)',
+  },
   {
     // embed-vast.js waits for this supplier before it can initialize the player.
     // Supply an empty schedule instead of blocking it and leaving playback stuck.
@@ -101,6 +116,8 @@ export const VLXX_SELECTORS = [
   '.banner-catfish-top',
   '.banner-catfish-bottom',
 ];
+
+export const VIET69_SELECTORS = [...VLXX_SELECTORS, '.app-ad'];
 
 export const YOUTUBE_SELECTORS = [
   'ytd-ad-slot-renderer',

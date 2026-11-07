@@ -9,6 +9,7 @@ let recording = false;
 const enabled = document.querySelector('#enabled');
 const xvideos = document.querySelector('#xvideos');
 const vlxx = document.querySelector('#vlxx');
+const viet69 = document.querySelector('#viet69');
 const toggle = document.querySelector('#site-toggle');
 document.querySelector('#version').textContent = chrome.runtime.getManifest().version;
 
@@ -20,6 +21,8 @@ async function render() {
   xvideos.disabled = false;
   vlxx.checked = settings.sites.vlxx;
   vlxx.disabled = false;
+  viet69.checked = settings.sites.viet69;
+  viet69.disabled = false;
   toggle.textContent = settings.disabledSites.some((domain) => domainMatches(host, domain))
     ? 'Bật lại trên website này'
     : 'Tạm tắt trên website này';
@@ -133,6 +136,7 @@ document.querySelector('#clear-network').addEventListener('click', async () => {
 for (const [input, site, label] of [
   [xvideos, 'xvideos', 'XVideos'],
   [vlxx, 'vlxx', 'VLXX'],
+  [viet69, 'viet69', 'Viet69'],
 ]) {
   input.addEventListener('change', async () => {
     input.disabled = true;
