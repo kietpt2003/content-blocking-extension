@@ -5,6 +5,7 @@ export const SITE_DOMAINS = {
   xvideos: ['xvideos.com'],
   vlxx: ['vlxx.app', 'vlxx.phd'],
   viet69: ['viet69.be'],
+  vnsextop: ['vnsextop1.pro'],
 };
 
 export const DEFAULTS = {
@@ -13,7 +14,15 @@ export const DEFAULTS = {
   network: true,
   cosmetic: true,
   youtubeData: true,
-  sites: { youtube: true, facebook: true, tiktok: true, xvideos: true, vlxx: true, viet69: true },
+  sites: {
+    youtube: true,
+    facebook: true,
+    tiktok: true,
+    xvideos: true,
+    vlxx: true,
+    viet69: true,
+    vnsextop: true,
+  },
   disabledSites: [],
   customDomains: [],
   customCosmetic: [],
@@ -33,6 +42,19 @@ export const NETWORK_DOMAINS = [
 ];
 
 export const NETWORK_PATHS = [
+  {
+    // Observed on vnsextop1.pro: two click/popunder loaders, bn.js banner
+    // slots and the independent inline-loaded thickteaching script.
+    domains: [
+      'driverhugoverblown.com',
+      'astronautlividlyreformer.com',
+      'earmuffpostnasalrisotto.com',
+      'thickteaching.com',
+    ],
+    initiatorDomains: ['vnsextop1.pro'],
+    regex:
+      '^https?://([^/]+\\.)?(driverhugoverblown\\.com|astronautlividlyreformer\\.com|earmuffpostnasalrisotto\\.com|thickteaching\\.com)/',
+  },
   {
     // Live Viet69 .app-ad slot: bn.js creates the __clb-spot iframe and images.
     domains: ['vertigovitalitywieldable.com'],
@@ -118,6 +140,8 @@ export const VLXX_SELECTORS = [
 ];
 
 export const VIET69_SELECTORS = [...VLXX_SELECTORS, '.app-ad'];
+
+export const VNSEXTOP_SELECTORS = ['.hiadu', '.catfish-image', '[id^="__clb-spot_"]'];
 
 export const YOUTUBE_SELECTORS = [
   'ytd-ad-slot-renderer',

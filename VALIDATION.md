@@ -1,3 +1,31 @@
+# Bổ sung VNSexTop — 07/11/2026 (giữ version 0.1.14)
+
+- Đã đọc HTML và DOM trực tiếp trên tab `vnsextop1.pro` đang mở. Banner đầu trang
+  nằm trong `.hiadu`; banner nổi `.catfish-image` chứa iframe `__clb-spot_...`.
+  Không ẩn `#wrapper` vì nó cũng chứa header, main, footer và nội dung website.
+- Chặn subresource từ bốn host quảng cáo đã quan sát: `driverhugoverblown.com`,
+  `astronautlividlyreformer.com`, `earmuffpostnasalrisotto.com`, `thickteaching.com`.
+  Initiator giới hạn `vnsextop1.pro`, không chặn main_frame hoặc website khác.
+- Công tắc riêng `sites.vnsextop` mặc định true ở popup/options; cấu hình cũ giữ
+  lựa chọn website trước đó. Ngoại lệ domain được ưu tiên. Giữ thư viện site,
+  HLS/DPlayer và iframe provider `b.dfplayer.cc`.
+- Mẫu Chromium thật có extension: trang chủ chặn 4 request nguồn quảng cáo,
+  0 quảng cáo tải thành công, 0 banner hiển thị. Bấm link clip từ trang chủ:
+  tổng 8 request quảng cáo bị chặn, 0 popup, 0 banner hiển thị, iframe player
+  vẫn có trong DOM. Không lưu ảnh hoặc video.
+- Giới hạn: provider `b.dfplayer.cc` không nạp được trong mẫu không có extension
+  và mẫu có extension; mẫu cuối ghi nhận `net::ERR_BLOCKED_BY_RESPONSE`.
+  Không sửa chính sách frame của nhà cung cấp hoặc coi click fixture là bằng chứng
+  phát clip thật/đã chặn hết quảng cáo trong video.
+- Unit suite: 34/34; browser suite: 33/33; format check đạt. Fixture bao phủ
+  bật/tắt qua options/popup, khôi phục banner, ngoại lệ domain, giới hạn website,
+  giữ wrapper/nội dung và click player iframe. Regex kiểm tra giữ đường dẫn player
+  và không khớp hostname giả dạng.
+- Đã nạp lại extension và tải lại tab trang chủ thật của người dùng, khôi phục
+  vị trí cuộn. `.hiadu` và `.catfish-image` đều display=none, height=0, marker
+  vnsextop; 0 banner hiển thị, 0 iframe quảng cáo; 32 thẻ nội dung và wrapper
+  vẫn hiện. Bản build đã đóng gói vào ZIP 0.1.14.
+
 # Bổ sung Viet69 — 07/11/2026 (giữ version 0.1.14)
 
 ## Banner còn sót dưới video trong tab người dùng

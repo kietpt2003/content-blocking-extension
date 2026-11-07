@@ -59,6 +59,15 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
   Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.
   Chưa xác nhận phát clip thật trong môi trường kiểm tra do player đang gặp lỗi
   JavaScript cả khi chưa dùng bộ lọc; không coi iframe fixture là bằng chứng phát video thật.
+- **VNSexTop (`vnsextop1.pro`):** công tắc **Chặn QC VNSexTop** ở popup/options,
+  mặc định bật. Chặn các nguồn loader/popunder/banner đã quan sát trên
+  `driverhugoverblown.com`, `astronautlividlyreformer.com`,
+  `earmuffpostnasalrisotto.com` và `thickteaching.com`, chỉ khi do website này khởi tạo.
+  Ẩn các slot iframe, banner đầu trang và banner nổi đã nhận diện; giữ nội dung,
+  wrapper, thư viện DPlayer/HLS và iframe `b.dfplayer.cc`.
+  Cần bật chặn URL và ẩn HTML, tải lại trang sau khi đổi công tắc.
+  Chưa xác nhận quảng cáo trong video vì iframe provider bị chặn phản hồi trong
+  phiên thử, kể cả mẫu chưa dùng extension.
 - **Website khác:** domain quảng cáo chung, ad slot phổ biến và CSS selector do bạn thêm.
 
 Đây là bộ quy tắc khởi đầu có thể mở rộng, **không phải bản sao uBlock Origin** và

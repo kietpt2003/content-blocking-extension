@@ -370,6 +370,89 @@ test('Viet69 hides the live related-before banner and recycled slots without hid
   await expect(page.locator('#remaining-ad')).toBeVisible();
 });
 
+test('VNSexTop switch blocks ad loaders and floating banners while preserving its wrapper and iframe', async () => {
+  const page = await context.newPage();
+  await page.route('**/*', (route) => {
+    const url = new URL(route.request().url());
+    if (
+      [
+        'driverhugoverblown.com',
+        'astronautlividlyreformer.com',
+        'earmuffpostnasalrisotto.com',
+        'thickteaching.com',
+      ].includes(url.hostname)
+    ) {
+      return route.fulfill({
+        contentType: 'application/javascript',
+        headers: { 'access-control-allow-origin': '*' },
+        body: 'window.fixtureAdLoaded=true;',
+      });
+    }
+    return route.fulfill({
+      contentType: 'text/html',
+      body:
+        url.hostname === 'b.dfplayer.cc'
+          ? `<button id="play" onclick="this.dataset.playing='true'">Play</button>`
+          : `<div id="wrapper"><header id="header">Header</header><main id="content">Content
+        <div class="hiadu">Top banner</div>
+        <iframe id="player-frame" src="https://b.dfplayer.cc/bf.html?did=2256"></iframe>
+        <div class="catfish-image"><div id="__clb-spot_2075239_rdn_2"><iframe></iframe></div></div>
+        </main></div><script src="https://driverhugoverblown.com/on.js"></script>`,
+    });
+  });
+  await page.goto('https://vnsextop1.pro/fixture/');
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
+  for (const selector of ['.hiadu', '.catfish-image', '[id^="__clb-spot_"]'])
+    await expect(page.locator(selector)).toBeHidden();
+  await expect(page.locator('#wrapper')).toBeVisible();
+  await expect(page.locator('#header')).toBeVisible();
+  const play = page.frameLocator('#player-frame').locator('#play');
+  await play.click();
+  await expect(play).toHaveAttribute('data-playing', 'true');
+  const fetchAd = (host) =>
+    page.evaluate(async (host) => {
+      try {
+        await fetch(`https://${host}/on.js`);
+        return 'allowed';
+      } catch {
+        return 'blocked';
+      }
+    }, host);
+  for (const host of [
+    'driverhugoverblown.com',
+    'astronautlividlyreformer.com',
+    'earmuffpostnasalrisotto.com',
+    'thickteaching.com',
+  ])
+    expect(await fetchAd(host)).toBe('blocked');
+  await control.reload();
+  await expect(control.locator('#vnsextop')).toBeChecked();
+  await control.locator('#vnsextop').uncheck();
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  await expect(page.locator('.hiadu')).toBeVisible();
+  await expect(page.locator('.catfish-image')).toBeVisible();
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  expect(await fetchAd('earmuffpostnasalrisotto.com')).toBe('allowed');
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.locator('#vnsextop')).not.toBeChecked();
+  await popup.locator('#vnsextop').check();
+  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VNSexTop');
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
+  await expect(page.locator('.catfish-image')).toBeHidden();
+  await setSettings({ disabledSites: ['vnsextop1.pro'] });
+  await page.reload();
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  await expect(page.locator('.catfish-image')).toBeVisible();
+  await setSettings();
+  await page.goto('https://news.example.com/fixture/');
+  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
+  await expect(page.locator('.catfish-image')).toBeVisible();
+});
+
 test('Facebook hides marked ads, keeps ordinary text, and handles recycled/lazy feed nodes', async () => {
   const page = await fixture(
     'https://www.facebook.com/__fixture__',

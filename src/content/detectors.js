@@ -3,6 +3,7 @@ import {
   YOUTUBE_SELECTORS,
   VLXX_SELECTORS,
   VIET69_SELECTORS,
+  VNSEXTOP_SELECTORS,
 } from '../config/defaults.js';
 import { domainMatches, siteForHost } from '../core/settings.js';
 import { youtubeSkipControls } from './youtube-controls.js';
@@ -41,6 +42,8 @@ export function reasonFor(element, host, settings) {
   if (site === 'vlxx' && VLXX_SELECTORS.some((selector) => safeMatch(element, selector)))
     return site;
   if (site === 'viet69' && VIET69_SELECTORS.some((selector) => safeMatch(element, selector)))
+    return site;
+  if (site === 'vnsextop' && VNSEXTOP_SELECTORS.some((selector) => safeMatch(element, selector)))
     return site;
   if (site === 'facebook' && isFacebookSidebarAd(element)) return 'facebook';
   if (site === 'youtube' && YOUTUBE_SELECTORS.some((selector) => safeMatch(element, selector))) {
@@ -95,6 +98,7 @@ export function candidateSelectors(host, settings) {
   if (site === 'youtube') selectors.push(...YOUTUBE_SELECTORS);
   if (site === 'vlxx') selectors.push(...VLXX_SELECTORS);
   if (site === 'viet69') selectors.push(...VIET69_SELECTORS);
+  if (site === 'vnsextop') selectors.push(...VNSEXTOP_SELECTORS);
   if (site === 'facebook')
     selectors.push('[role="article"]', '[data-pagelet^="FeedUnit_"]', FACEBOOK_SIDEBAR_HEADINGS);
   if (site === 'tiktok')
