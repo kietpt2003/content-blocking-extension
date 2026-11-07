@@ -1,5 +1,6 @@
 import { parseCosmetic, parseLines, validateSettings } from '../core/settings.js';
 import { getSettings, notice, updateSettings } from './shared.js';
+import { getLanguage, setLanguage, t } from './i18n.js';
 
 const fields = ['enabled', 'network', 'cosmetic', 'youtubeData'];
 const sites = ['youtube', 'facebook', 'tiktok', 'xvideos', 'vlxx', 'viet69', 'vnsextop'];
@@ -7,6 +8,8 @@ const byId = (id) => document.getElementById(id);
 document.querySelector('.version').textContent = chrome.runtime.getManifest().version;
 
 function populate(settings) {
+  setLanguage(settings.language);
+  byId('language').value = settings.language;
   fields.forEach((key) => {
     byId(key).checked = settings[key];
   });
@@ -25,7 +28,7 @@ function validateCSS(settings) {
     try {
       document.querySelector(selector);
     } catch {
-      throw new Error(`CSS selector không hợp lệ: ${selector}`);
+      throw new Error(t('error_css', { selector }));
     }
   }
   return settings;
@@ -37,15 +40,16 @@ byId('settings-form').addEventListener('submit', async (event) => {
   try {
     const settings = validateCSS(
       validateSettings({
+        language: byId('language').value,
         ...Object.fromEntries(fields.map((key) => [key, byId(key).checked])),
         sites: Object.fromEntries(sites.map((key) => [key, byId(key).checked])),
         customDomains: parseLines(byId('customDomains').value),
         disabledSites: parseLines(byId('disabledSites').value),
-        customCosmetic: parseCosmetic(byId('customCosmetic').value),
+        customCosmetic: parseCosmetic(byId('customCosmetic').value, getLanguage()),
       }),
     );
     populate(await updateSettings(settings));
-    notice('Đã lưu. HTML cập nhật ngay; request đã tải hoặc JSON cũ cần tải lại trang.');
+    notice('saved');
   } catch (error) {
     notice(error.message, true);
   } finally {
@@ -64,7 +68,7 @@ byId('export').addEventListener('click', async () => {
     anchor.download = 'home-content-blocker.json';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notice('Đã xuất cấu hình đang lưu.');
+    notice('exported');
   } catch (error) {
     notice(error.message, true);
   }
@@ -74,9 +78,15 @@ byId('file').addEventListener('change', async () => {
   try {
     const file = byId('file').files[0];
     if (!file) return;
-    if (file.size > 128 * 1024) throw new Error('File cấu hình tối đa 128 KiB.');
-    populate(validateCSS(validateSettings(JSON.parse(await file.text()))));
-    notice('Đã đọc file. Bấm Lưu cấu hình để áp dụng.');
+    if (file.size > 128 * 1024) throw new Error(t('error_file_size'));
+    let imported;
+    try {
+      imported = JSON.parse(await file.text());
+    } catch {
+      throw new Error(t('error_json'));
+    }
+    populate(validateCSS(validateSettings(imported, getLanguage())));
+    notice('imported');
   } catch (error) {
     notice(error.message, true);
   } finally {
@@ -84,19 +94,35 @@ byId('file').addEventListener('change', async () => {
   }
 });
 byId('reset').addEventListener('click', async () => {
-  if (!confirm('Khôi phục bộ lọc mặc định và xóa các quy tắc riêng?')) return;
+  if (!confirm(t('reset_confirm'))) return;
   try {
     const result = await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' });
     if (!result.ok) throw new Error(result.error);
     populate(result.settings);
-    notice('Đã khôi phục mặc định.');
+    notice('reset_done');
   } catch (error) {
     notice(error.message, true);
+  }
+});
+document.addEventListener('home-blocker:language-changed', () => {
+  byId('language').value = getLanguage();
+});
+byId('language').addEventListener('change', async () => {
+  const language = byId('language');
+  language.disabled = true;
+  try {
+    await updateSettings({ language: language.value });
+    notice('language_saved');
+  } catch (error) {
+    language.value = getLanguage();
+    notice(error.message, true);
+  } finally {
+    language.disabled = false;
   }
 });
 getSettings()
   .then((settings) => {
     populate(settings);
-    notice('Cấu hình được lưu cục bộ trên Chrome này.');
+    notice('settings_local');
   })
   .catch((error) => notice(error.message, true));

@@ -3,6 +3,7 @@ import { validateSettings } from './core/settings.js';
 import { compileNetworkRules } from './core/network.js';
 import './network-capture.js';
 import { applyYouTubePageScript, applyXVideosPageScript } from './core/page-scripts.js';
+import { translate } from './core/i18n.js';
 
 let queue = Promise.resolve();
 function serial(operation) {
@@ -61,8 +62,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return false;
   (async () => {
     await ready;
-    if (message.type === 'GET_SETTINGS') return readSettings();
-    if (!trustedUI) throw new Error('Chỉ trang cài đặt extension được thay đổi bộ lọc.');
+    const settings = await readSettings();
+    if (message.type === 'GET_SETTINGS') return settings;
+    if (!trustedUI) throw new Error(translate(settings.language, 'error_settings_ui'));
     return serial(() =>
       saveSettings(message.type === 'RESET_SETTINGS' ? structuredClone(DEFAULTS) : message.patch),
     );

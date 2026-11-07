@@ -10,6 +10,7 @@ export const SITE_DOMAINS = {
 
 export const DEFAULTS = {
   schemaVersion: 1,
+  language: 'vi',
   enabled: true,
   network: true,
   cosmetic: true,

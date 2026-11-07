@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createIcons } from './icons.mjs';
+import { CATALOGS } from '../src/core/i18n.js';
 
 const output = 'dist/extension';
 await rm(output, { recursive: true, force: true });
@@ -28,5 +29,10 @@ const manifest = JSON.parse(await readFile('src/manifest.json', 'utf8'));
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 manifest.version = pkg.version;
 await writeFile(`${output}/manifest.json`, JSON.stringify(manifest, null, 2) + '\n');
+for (const [language, messages] of Object.entries(CATALOGS)) {
+  const directory = `${output}/_locales/${language.replace('-', '_')}`;
+  await mkdir(directory, { recursive: true });
+  await writeFile(`${directory}/messages.json`, JSON.stringify(messages, null, 2) + '\n');
+}
 await createIcons(`${output}/icons`);
 console.log(`Built Chrome MV3 extension: ${output}`);

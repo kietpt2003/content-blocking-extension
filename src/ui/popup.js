@@ -1,5 +1,6 @@
 import { domainMatches } from '../core/settings.js';
 import { getSettings, notice, updateSettings } from './shared.js';
+import { t } from './i18n.js';
 
 let settings;
 let host = '';
@@ -14,8 +15,22 @@ const vnsextop = document.querySelector('#vnsextop');
 const toggle = document.querySelector('#site-toggle');
 document.querySelector('#version').textContent = chrome.runtime.getManifest().version;
 
+let hiddenCount = 0;
+function renderHidden() {
+  const number = document.createElement('b');
+  number.id = 'hidden';
+  number.textContent = String(hiddenCount);
+  const [before, after] = t('popup_hidden').split('{count}');
+  document.querySelector('#hidden-summary').replaceChildren(before, number, after);
+}
+document.addEventListener('home-blocker:language-changed', () => {
+  if (settings) void render().catch((error) => notice(error.message, true));
+});
+
 async function render() {
   settings = await getSettings();
+  document.querySelector('#host').textContent = host || t('unsupported_page');
+  renderHidden();
   enabled.checked = settings.enabled;
   enabled.disabled = false;
   xvideos.checked = settings.sites.xvideos;
@@ -27,8 +42,8 @@ async function render() {
   vnsextop.checked = settings.sites.vnsextop;
   vnsextop.disabled = false;
   toggle.textContent = settings.disabledSites.some((domain) => domainMatches(host, domain))
-    ? 'Bật lại trên website này'
-    : 'Tạm tắt trên website này';
+    ? t('site_enable')
+    : t('site_disable');
   toggle.disabled = !host;
   const youtubePanel = document.querySelector('#youtube-panel');
   youtubePanel.hidden = !domainMatches(host, 'youtube.com');
@@ -40,8 +55,7 @@ async function render() {
     youtube: null,
   };
   if (!youtubePanel.hidden) {
-    document.querySelector('#youtube-state').textContent =
-      'Chưa nhận được bộ lọc. Đóng tab rồi mở lại video sau khi Reload extension.';
+    document.querySelector('#youtube-state').textContent = t('youtube_missing');
     document.querySelector('#youtube-counts').textContent = '';
   }
   if (tabId) {
@@ -51,7 +65,8 @@ async function render() {
         { type: 'GET_PAGE_STATUS' },
         { frameId: 0 },
       );
-      document.querySelector('#hidden').textContent = state.hidden;
+      hiddenCount = state.hidden;
+      renderHidden();
       diagnosticReport = {
         extensionVersion: chrome.runtime.getManifest().version,
         pageVersion: state.version,
@@ -65,19 +80,26 @@ async function render() {
         const data = state.youtube;
         document.querySelector('#youtube-state').textContent = !data
           ? settings.youtubeData
-            ? 'JSON chưa chạy trên tab này. Kiểm tra công tắc/ngoại lệ và tải lại tab sau khi bật.'
-            : 'Lọc JSON đang tắt. Chặn mạng hoạt động theo cấu hình riêng.'
+            ? t('youtube_json_missing')
+            : t('youtube_json_off')
           : data.version !== chrome.runtime.getManifest().version
-            ? 'Tab đang chạy script cũ. Hãy đóng tab và mở lại video.'
+            ? t('youtube_old')
             : data.enabled
-              ? 'Lọc dữ liệu đang bật.'
-              : 'Lọc dữ liệu đang tắt hoặc website được bỏ qua.';
+              ? t('youtube_on')
+              : t('youtube_off');
         document.querySelector('#youtube-counts').textContent = data
-          ? `Sửa dữ liệu ban đầu: ${data.initialChanged}; fetch: ${data.fetchChanged}/${data.fetchInspected}; XHR: ${data.xhrChanged}/${data.xhrInspected}.`
+          ? t('youtube_counts', {
+              initial: data.initialChanged,
+              fetchChanged: data.fetchChanged,
+              fetchInspected: data.fetchInspected,
+              xhrChanged: data.xhrChanged,
+              xhrInspected: data.xhrInspected,
+            })
           : '';
       }
     } catch {
-      document.querySelector('#hidden').textContent = '0';
+      hiddenCount = 0;
+      renderHidden();
     }
     if (!youtubePanel.hidden) {
       try {
@@ -95,11 +117,15 @@ async function render() {
           ...result.network,
         };
         recording = result.network.capture.recording;
-        document.querySelector('#network-state').textContent =
-          `Chặn mạng: ${networkEnabled ? 'bật' : 'tắt'}; rule chặn: ${result.network.blockRuleCount}; đã ghi: ${result.network.capture.requests.length} request${recording ? ' (đang ghi)' : ''}.`;
+        document.querySelector('#network-state').textContent = t('network_state', {
+          state: t(networkEnabled ? 'network_on' : 'network_off'),
+          rules: result.network.blockRuleCount,
+          requests: result.network.capture.requests.length,
+          recording: recording ? t('network_recording') : '',
+        });
         document.querySelector('#capture-network').textContent = recording
-          ? 'Dừng ghi request'
-          : 'Ghi 60 giây và tải lại tab';
+          ? t('capture_stop')
+          : t('capture_start');
       } catch (error) {
         document.querySelector('#network-state').textContent = error.message;
       }
@@ -116,11 +142,7 @@ document.querySelector('#capture-network').addEventListener('click', async () =>
     });
     if (!result.ok) throw new Error(result.error);
     await render();
-    notice(
-      recording
-        ? 'Đã bật ghi trước khi tải lại tab. Khi quảng cáo xuất hiện, dừng ghi rồi sao chép chẩn đoán.'
-        : 'Đã dừng ghi request.',
-    );
+    notice(recording ? 'capture_started' : 'capture_stopped');
   } catch (error) {
     notice(error.message, true);
   }
@@ -130,7 +152,7 @@ document.querySelector('#clear-network').addEventListener('click', async () => {
     const result = await chrome.runtime.sendMessage({ type: 'CLEAR_NETWORK_CAPTURE', tabId });
     if (!result.ok) throw new Error(result.error);
     await render();
-    notice('Đã xóa bản ghi request.');
+    notice('capture_cleared');
   } catch (error) {
     notice(error.message, true);
   }
@@ -147,7 +169,7 @@ for (const [input, site, label] of [
     try {
       await updateSettings({ sites: { ...settings.sites, [site]: input.checked } });
       await render();
-      notice(`Đã cập nhật chặn QC ${label}. Tải lại clip để áp dụng đầy đủ.`);
+      notice('ads_updated', false, { site: label });
     } catch (error) {
       notice(error.message, true);
       await render();
@@ -160,7 +182,7 @@ enabled.addEventListener('change', async () => {
   try {
     await updateSettings({ enabled: enabled.checked });
     await render();
-    notice('Đã cập nhật.');
+    notice('updated');
   } catch (error) {
     notice(error.message, true);
     await render();
@@ -170,9 +192,9 @@ document.querySelector('#copy-diagnostics').addEventListener('click', async () =
   try {
     await render();
     await navigator.clipboard.writeText(JSON.stringify(diagnosticReport, null, 2));
-    notice('Đã sao chép; không có cookie, token, URL phát video hoặc nội dung trang.');
+    notice('copied');
   } catch (error) {
-    notice(`Không sao chép được: ${error.message}`, true);
+    notice('error_copy', true, { error: error.message });
   }
 });
 toggle.addEventListener('click', async () => {
@@ -182,7 +204,7 @@ toggle.addEventListener('click', async () => {
     if (exceptions.length === settings.disabledSites.length) exceptions.push(host);
     await updateSettings({ disabledSites: exceptions });
     await render();
-    notice('Đã cập nhật. Tải lại trang nếu nội dung cũ chưa trở lại.');
+    notice('site_updated');
   } catch (error) {
     notice(error.message, true);
     await render();
@@ -201,6 +223,6 @@ document
   } catch {
     /* Browser-owned pages cannot be filtered. */
   }
-  document.querySelector('#host').textContent = host || 'Trang này không hỗ trợ lọc';
+  document.querySelector('#host').textContent = host || t('unsupported_page');
   await render();
 })().catch((error) => notice(error.message, true));

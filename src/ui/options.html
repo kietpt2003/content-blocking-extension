@@ -3,43 +3,62 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Cài đặt · Home Content Blocker</title>
+    <title data-i18n="options_title">Cài đặt · Home Content Blocker</title>
     <link rel="stylesheet" href="ui.css" />
   </head>
   <body class="options">
     <header>
       <img src="icons/48.png" width="44" height="44" alt="" />
       <div>
-        <h1>Home Content Blocker</h1>
-        <p class="muted">Quy tắc của bạn. Lưu trên trình duyệt của bạn.</p>
+        <h1 data-i18n="extension_name">Home Content Blocker</h1>
+        <p class="muted" data-i18n="options_tagline">
+          Quy tắc của bạn. Lưu trên trình duyệt của bạn.
+        </p>
       </div>
       <span class="version">0.1.0</span>
     </header>
     <main>
       <form id="settings-form">
         <section class="card">
-          <span class="eyebrow">LỚP BẢO VỆ</span>
-          <h2>Chặn request &amp; lọc nội dung</h2>
+          <label for="language" data-i18n="language_label">Ngôn ngữ</label>
+          <select id="language">
+            <option value="vi" lang="vi">Tiếng Việt</option>
+            <option value="en" lang="en">English</option>
+            <option value="zh-CN" lang="zh-CN">简体中文</option>
+          </select>
+          <p class="hint" data-i18n="language_hint">
+            Đổi ngôn ngữ áp dụng ngay và được lưu trên trình duyệt này.
+          </p>
+        </section>
+        <section class="card">
+          <span class="eyebrow" data-i18n="protection_heading">LỚP BẢO VỆ</span>
+          <h2 data-i18n="protection_title">Chặn request &amp; lọc nội dung</h2>
           <label class="switch-row"
-            ><span><strong>Bật bộ lọc</strong><small>Công tắc chung cho extension</small></span
+            ><span
+              ><strong data-i18n="enabled_label">Bật bộ lọc</strong
+              ><small data-i18n="enabled_hint">Công tắc chung cho extension</small></span
             ><input id="enabled" type="checkbox" role="switch"
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Chặn domain / URL</strong
-              ><small>Ngăn tải tài nguyên từ các địa chỉ quảng cáo</small></span
+              ><strong data-i18n="network_label">Chặn domain / URL</strong
+              ><small data-i18n="network_hint"
+                >Ngăn tải tài nguyên từ các địa chỉ quảng cáo</small
+              ></span
             ><input id="network" type="checkbox" role="switch"
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Ẩn thành phần HTML</strong
-              ><small>Theo dõi bài mới, cuộn trang và điều hướng SPA</small></span
+              ><strong data-i18n="cosmetic_label">Ẩn thành phần HTML</strong
+              ><small data-i18n="cosmetic_hint"
+                >Theo dõi bài mới, cuộn trang và điều hướng SPA</small
+              ></span
             ><input id="cosmetic" type="checkbox" role="switch"
           /></label>
         </section>
         <section class="card">
-          <span class="eyebrow">WEBSITE</span>
-          <h2>Quy tắc theo nền tảng</h2>
+          <span class="eyebrow" data-i18n="website_heading">WEBSITE</span>
+          <h2 data-i18n="website_title">Quy tắc theo nền tảng</h2>
           <div class="site-grid">
             <label><input id="youtube" type="checkbox" /> YouTube</label
             ><label><input id="facebook" type="checkbox" /> Facebook</label
@@ -47,8 +66,8 @@
           </div>
           <label class="switch-row"
             ><span
-              ><strong>Chặn QC XVideos</strong
-              ><small
+              ><strong data-i18n="xvideos_label">Chặn QC XVideos</strong
+              ><small data-i18n="xvideos_hint"
                 >Bỏ quảng cáo trước và sau clip. Cần bật Chặn domain / URL; tải lại clip sau khi
                 đổi.</small
               ></span
@@ -56,8 +75,8 @@
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Chặn QC VLXX</strong
-              ><small
+              ><strong data-i18n="vlxx_label">Chặn QC VLXX</strong
+              ><small data-i18n="vlxx_hint"
                 >Áp dụng cho vlxx.app và vlxx.phd. Cần bật Chặn domain / URL và Ẩn thành phần HTML;
                 tải lại clip sau khi đổi.</small
               ></span
@@ -65,8 +84,8 @@
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Chặn QC Viet69</strong
-              ><small
+              ><strong data-i18n="viet69_label">Chặn QC Viet69</strong
+              ><small data-i18n="viet69_hint"
                 >Áp dụng cho viet69.be. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain /
                 URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.</small
               ></span
@@ -74,8 +93,8 @@
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Chặn QC VNSexTop</strong
-              ><small
+              ><strong data-i18n="vnsextop_label">Chặn QC VNSexTop</strong
+              ><small data-i18n="vnsextop_hint"
                 >vnsextop1.pro. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain / URL và
                 Ẩn thành phần HTML; tải lại trang sau khi đổi.</small
               ></span
@@ -83,62 +102,67 @@
           /></label>
           <label class="switch-row"
             ><span
-              ><strong>Thử nghiệm: JSON YouTube</strong
-              ><small
+              ><strong data-i18n="youtube_data_label">Thử nghiệm: JSON YouTube</strong
+              ><small data-i18n="youtube_data_hint"
                 >Lọc dữ liệu quảng cáo YouTube đã nhận diện. Tắt nếu phát video gặp lỗi; cần tải lại
                 trang sau khi đổi.</small
               ></span
             ><input id="youtubeData" type="checkbox" role="switch"
           /></label>
-          <p class="hint">
+          <p class="hint" data-i18n="website_hint">
             Không bảo đảm bỏ mọi quảng cáo trong video. Facebook/TikTok chỉ ẩn các bài có dấu hiệu
             quảng cáo được nhận diện; không tìm theo toàn bộ nội dung bài viết.
           </p>
         </section>
         <section class="card">
-          <span class="eyebrow">QUY TẮC RIÊNG</span>
-          <h2>Domain &amp; HTML</h2>
-          <label for="customDomains">Domain bổ sung cần chặn</label
+          <span class="eyebrow" data-i18n="custom_heading">QUY TẮC RIÊNG</span>
+          <h2 data-i18n="custom_title">Domain &amp; HTML</h2>
+          <label for="customDomains" data-i18n="custom_domains_label">Domain bổ sung cần chặn</label
           ><textarea
             id="customDomains"
             rows="5"
             spellcheck="false"
             placeholder="ads.example.com&#10;tracking.example.com"
           ></textarea>
-          <p class="hint">
+          <p class="hint" data-i18n="custom_domains_hint">
             Mỗi dòng một domain. Bao gồm subdomain; không nhập https://, path hoặc wildcard. Không
             chặn điều hướng trang chính.
           </p>
-          <label for="customCosmetic">Quy tắc HTML</label
+          <label for="customCosmetic" data-i18n="custom_cosmetic_label">Quy tắc HTML</label
           ><textarea
             id="customCosmetic"
             rows="5"
             spellcheck="false"
             placeholder="news.example.com##.advertisement&#10;example.com##[data-advertisement]"
           ></textarea>
-          <p class="hint">
+          <p class="hint" data-i18n="custom_cosmetic_hint">
             Dạng domain##CSS-selector. Đây là tập con đơn giản, không phải trình đọc EasyList đầy
             đủ.
           </p>
-          <label for="disabledSites">Website được bỏ qua</label
+          <label for="disabledSites" data-i18n="disabled_sites_label">Website được bỏ qua</label
           ><textarea
             id="disabledSites"
             rows="3"
             spellcheck="false"
             placeholder="example.com"
           ></textarea>
-          <p class="hint">Áp dụng cả lọc request và HTML. Ngoại lệ được ưu tiên hơn domain chặn.</p>
+          <p class="hint" data-i18n="disabled_sites_hint">
+            Áp dụng cả lọc request và HTML. Ngoại lệ được ưu tiên hơn domain chặn.
+          </p>
         </section>
         <div class="actions">
-          <button id="save" type="submit" class="primary">Lưu cấu hình</button
-          ><button id="export" type="button" class="secondary">Xuất JSON</button
-          ><button id="import" type="button" class="secondary">Nhập JSON</button
-          ><button id="reset" type="button" class="quiet">Khôi phục mặc định</button
+          <button id="save" type="submit" class="primary" data-i18n="save">Lưu cấu hình</button
+          ><button id="export" type="button" class="secondary" data-i18n="export">Xuất JSON</button
+          ><button id="import" type="button" class="secondary" data-i18n="import">Nhập JSON</button
+          ><button id="reset" type="button" class="quiet" data-i18n="reset">
+            Khôi phục mặc định</button
           ><input id="file" type="file" accept="application/json,.json" hidden />
         </div>
-        <p id="status" role="status" aria-live="polite">Đang đọc cấu hình…</p>
+        <p id="status" role="status" aria-live="polite" data-i18n="loading_settings">
+          Đang đọc cấu hình…
+        </p>
       </form>
-      <footer>
+      <footer data-i18n="footer">
         Không gửi lịch sử duyệt web, cookie hoặc nội dung trang lên server. Extension chỉ hoạt động
         trên Chrome đã cài; không lọc các ứng dụng khác.
       </footer>

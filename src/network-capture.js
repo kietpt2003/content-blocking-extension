@@ -1,4 +1,5 @@
 import { summarizeRequest, captureReport } from './core/network-diagnostics.js';
+import { translate } from './core/i18n.js';
 
 let capture = null;
 let queue = Promise.resolve();
@@ -109,11 +110,17 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   )
     return false;
   if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL(''))) {
-    respond({ ok: false, error: 'Chỉ giao diện extension được đọc/ghi chẩn đoán mạng.' });
+    respond({
+      ok: false,
+      error: translate('vi', 'error_network_ui'),
+      errorKey: 'error_network_ui',
+    });
     return false;
   }
   serial(async () => {
-    if (!Number.isInteger(message.tabId)) throw new Error('Tab không hợp lệ.');
+    const { settings } = await chrome.storage.local.get('settings');
+    const t = (key) => translate(settings?.language, key);
+    if (!Number.isInteger(message.tabId)) throw new Error(t('error_tab'));
     if (message.type === 'START_NETWORK_CAPTURE') {
       const tab = await chrome.tabs.get(message.tabId);
       const url = new URL(tab.url);
@@ -121,7 +128,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         url.protocol !== 'https:' ||
         !(url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com'))
       )
-        throw new Error('Chỉ ghi request trên tab YouTube.');
+        throw new Error(t('error_capture_site'));
       const now = Date.now();
       capture = {
         tabId: message.tabId,

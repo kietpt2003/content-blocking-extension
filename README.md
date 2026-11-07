@@ -4,6 +4,23 @@ Project Node.js độc lập để build Chrome Extension Manifest V3, lọc req
 và nội dung HTML trên trình duyệt. Không phải DNS server, không cần proxy/CA và không
 chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trực tiếp trong Chrome.
 
+## Ngôn ngữ
+
+Trong **Cài đặt → Ngôn ngữ**, chọn **Tiếng Việt**, **English** hoặc **简体中文**
+(tiếng Trung giản thể). Tiếng Việt là mặc định. Đổi ngôn ngữ áp dụng và lưu ngay,
+đồng bộ popup/các trang cài đặt đang mở; không cần tải lại website hoặc lưu các
+thay đổi bộ lọc đang chỉnh dở.
+
+Nhãn, hướng dẫn, thông báo, lỗi cấu hình và chẩn đoán YouTube có đủ ba ngôn ngữ.
+Lựa chọn lưu tại `settings.language` (`vi`, `en`, `zh-CN`), đi kèm khi xuất/nhập JSON.
+Cấu hình cũ tự bổ sung tiếng Việt và giữ các quy tắc/chọn website đã lưu. Khôi phục
+mặc định cũng đặt lại ngôn ngữ về tiếng Việt.
+
+Bản dịch nằm trong `src/locales/vi.js`, `en.js`, `zh-CN.js`; dùng nguyên câu có
+tham số để tránh ghép từ khác ngữ pháp. Build tạo `_locales/vi`, `_locales/en`,
+`_locales/zh_CN` cho metadata Chrome. Mô tả trong trang quản lý extension theo
+ngôn ngữ Chrome; lựa chọn trong cài đặt điều khiển giao diện extension.
+
 ## Các lớp lọc
 
 | Lớp          | Chức năng                                                                                              |

@@ -121,6 +121,21 @@ textarea:focus-visible {
   outline: 3px solid #91c9ad;
   outline-offset: 3px;
 }
+select:focus-visible {
+  outline: 3px solid #91c9ad;
+  outline-offset: 3px;
+}
+select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fafcf8;
+  color: inherit;
+  font: inherit;
+}
 button {
   font: 600 14px system-ui;
   cursor: pointer;

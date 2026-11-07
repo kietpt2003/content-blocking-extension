@@ -453,6 +453,105 @@ test('VNSexTop switch blocks ad loaders and floating banners while preserving it
   await expect(page.locator('.catfish-image')).toBeVisible();
 });
 
+test('English and Chinese apply across options and popup, persist, and preserve unsaved filtering fields', async () => {
+  await control.reload();
+  await expect(control.locator('#language')).toHaveValue('vi');
+  await control.locator('#customDomains').fill('ads.example.com');
+  await control.locator('#xvideos').uncheck();
+  await control.locator('#language').selectOption('en');
+  await expect(control.locator('#status')).toHaveText('Language saved.');
+  await expect(control.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(control.locator('#save')).toHaveText('Save settings');
+  await expect(control.locator('#customDomains')).toHaveValue('ads.example.com');
+  await expect(control.locator('#xvideos')).not.toBeChecked();
+  const stored = await control.evaluate(() => chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }));
+  expect(stored.settings.language).toBe('en');
+  expect(stored.settings.customDomains).toEqual([]);
+  expect(stored.settings.sites.xvideos).toBe(true);
+  const page = await fixture('https://www.youtube.com/watch?v=languages', '<p>YouTube</p>');
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.bringToFront();
+  await popup.reload();
+  await expect(popup.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(popup.locator('#options')).toHaveText('Open settings & rules');
+  await expect(popup.locator('#network-state')).toContainText('Network blocking: on');
+  await popup.locator('#xvideos').uncheck();
+  await expect(popup.locator('#status')).toHaveText(
+    'XVideos ad blocking updated. Reload the video to apply all changes.',
+  );
+  await control.locator('#customDomains').fill('https://invalid.test');
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('Invalid domain: https://invalid.test');
+  await control.locator('#language').selectOption('zh-CN');
+  await expect(control.locator('#status')).toHaveText('已保存语言设置。');
+  await expect(control.locator('#save')).toHaveText('保存设置');
+  await expect(popup.locator('html')).toHaveAttribute('lang', 'zh-CN');
+  await expect(popup.locator('#network-state')).toContainText('网络拦截：启用');
+  await expect(popup.locator('#hidden-summary')).toHaveText('已隐藏 0 个元素');
+  const invalidTab = await control.evaluate(() =>
+    chrome.runtime.sendMessage({ type: 'GET_NETWORK_DIAGNOSTICS', tabId: 'invalid' }),
+  );
+  expect(invalidTab.error).toBe('标签页无效。');
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('域名无效：https://invalid.test');
+  await control.locator('#customDomains').fill('ads.example.com');
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('已保存。');
+  await control.reload();
+  await expect(control.locator('#language')).toHaveValue('zh-CN');
+  await expect(control.locator('#customDomains')).toHaveValue('ads.example.com');
+  await expect(control.locator('#xvideos')).not.toBeChecked();
+  await control.setViewportSize({ width: 375, height: 812 });
+  expect(await control.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+    true,
+  );
+  await control.setViewportSize({ width: 1280, height: 720 });
+  await control.locator('#language').selectOption('vi');
+  await expect(control.locator('#save')).toHaveText('Lưu cấu hình');
+  await expect(popup.locator('html')).toHaveAttribute('lang', 'vi');
+});
+
+test('localized JSON import/export and reset preserve the locale contract', async () => {
+  await setSettings({ language: 'en' });
+  await control.reload();
+  await expect(control.locator('#status')).toContainText('stored locally');
+  await control.locator('#file').setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{'),
+  });
+  await expect(control.locator('#status')).toHaveText('Invalid JSON file.');
+  await control.locator('#file').setInputFiles({
+    name: 'chinese.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({ ...DEFAULTS, language: 'zh-CN', customDomains: ['ads.example.com'] }),
+    ),
+  });
+  await expect(control.locator('#status')).toHaveText('已读取文件。点击“保存设置”以应用。');
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('已保存。');
+  const download = control.waitForEvent('download');
+  await control.locator('#export').click();
+  const file = await download;
+  const stream = await file.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const exported = JSON.parse(Buffer.concat(chunks).toString());
+  expect(exported.language).toBe('zh-CN');
+  expect(exported.customDomains).toEqual(['ads.example.com']);
+  let confirmation;
+  control.once('dialog', async (dialog) => {
+    confirmation = dialog.message();
+    await dialog.accept();
+  });
+  await control.locator('#reset').click();
+  await expect(control.locator('#status')).toHaveText('Đã khôi phục mặc định.');
+  expect(confirmation).toBe('恢复默认过滤设置并删除自定义规则？');
+  await expect(control.locator('#language')).toHaveValue('vi');
+});
+
 test('Facebook hides marked ads, keeps ordinary text, and handles recycled/lazy feed nodes', async () => {
   const page = await fixture(
     'https://www.facebook.com/__fixture__',

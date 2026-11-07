@@ -1,3 +1,21 @@
+# Đa ngôn ngữ — 07/11/2026 (giữ version 0.1.14)
+
+- Thêm 112 message cho mỗi bộ Việt (`vi`), Anh (`en`), Trung giản thể (`zh-CN`).
+  Bản dịch bao phủ popup/options, hướng dẫn, lỗi cấu hình, nhập JSON, xác nhận reset
+  và các trạng thái chẩn đoán YouTube. Nội dung chẩn đoán JSON giữ tên trường kỹ thuật.
+- Lựa chọn ngôn ngữ lưu ngay bằng patch riêng `settings.language`, không ghi đè
+  field bộ lọc chưa lưu. Đồng bộ qua storage event khi popup/options đang mở.
+  Cấu hình cũ bổ sung vi; nhập/xuất giữ ngôn ngữ; reset đưa về vi.
+- Build sinh catalog Chrome `_locales/vi`, `en`, `zh_CN`; manifest dùng message
+  cho name/description/action title, default_locale=vi. Đã kiểm tra Chrome en-US
+  trả mô tả tiếng Anh từ `chrome.i18n.getMessage` trong bản extension thật.
+- Unit suite: 38/38; browser suite: 35/35; format và diff check đạt. Kiểm tra đủ
+  key/tham số, fallback, lỗi theo ngôn ngữ, giữ nguyên rules khi đổi locale, đổi
+  ngôn ngữ giữa popup/options, import/export/reset, trạng thái mạng và form đang chỉnh.
+- Đã kiểm tra ảnh options/popup tiếng Anh và Trung giản thể, không tràn ngang tại
+  options 375 px và popup 360 px. Ảnh ở `artifacts/i18n/`. Các bộ lọc website và
+  logic nhận diện nội dung web không đổi theo lựa chọn ngôn ngữ.
+
 # Bổ sung VNSexTop — 07/11/2026 (giữ version 0.1.14)
 
 - Đã đọc HTML và DOM trực tiếp trên tab `vnsextop1.pro` đang mở. Banner đầu trang
