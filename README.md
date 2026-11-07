@@ -337,7 +337,8 @@ npm run package
 ```
 
 Tạo `artifacts/content-blocking-extension-<version>.zip` và `SHA256SUMS`.
-Giải nén ZIP rồi Load unpacked thư mục `extension`. ZIP không phải CRX đã ký và chưa
+ZIP đặt `manifest.json` ngay ở thư mục gốc để upload Chrome Web Store. Để thử cục bộ,
+giải nén vào một thư mục riêng rồi Load unpacked thư mục đó. ZIP không phải CRX đã ký và chưa
 được phát hành lên Chrome Web Store. Script đóng gói yêu cầu lệnh `zip` (macOS/Linux).
 
 ## Tài liệu nền

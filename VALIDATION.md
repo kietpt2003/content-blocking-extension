@@ -1,3 +1,23 @@
+# Release và rà soát Store — 07/11/2026
+
+- Đã build đúng yêu cầu ban đầu `0.0.15`; sau đó workspace được sửa đồng bộ sang
+  `0.1.15` trong lúc audit và thay đổi đó được giữ lại. Hai ZIP đều có trong artifacts.
+  Bản Store cài trên máy là `0.1.14`, nên chỉ gói `0.1.15` phù hợp để cập nhật listing này.
+- Sửa script package để manifest ở gốc ZIP, không còn bọc thư mục `extension/`.
+  Kiểm tra hai ZIP: phiên bản đúng, ba locale đủ 112 key mỗi bộ, script/icon cần thiết
+  có mặt và không đóng gói node_modules/tests/git. Không thấy eval/new Function trong JS.
+- Đã giải nén chính ZIP 0.1.15 rồi load Chromium tạm: phiên bản 0.1.15, 21 DNR rules,
+  đổi ba ngôn ngữ thành công. Unit: 38/38; browser suite 0.1.15: 35/35; format/diff đạt.
+- Đã đọc trực tiếp Privacy/Store listing trên Developer Dashboard. Privacy policy URL
+  đang trống, các data-use category chưa chọn, scripting justification chỉ nêu YouTube,
+  Mature content đang false và listing chỉ có mô tả tiếng Việt rất ngắn.
+- Đối chiếu tài liệu Chrome hiện hành: cần tăng version, manifest gốc ZIP, cập nhật
+  localized descriptions; phải khai báo xử lý dữ liệu ngay cả local-only; adult-site
+  integrations cần cờ Mature và vẫn chịu chính sách nội dung. Chi tiết và nguồn ở
+  RELEASE_REVIEW.md, bản nháp policy ở docs/privacy-policy.md.
+- Đã tạo ba ảnh Store 0.1.15 (vi/en/zh-CN), 1280x800 RGB PNG 24-bit không alpha,
+  tại artifacts/release-0.1.15/store-listing/. Không thay đổi/lưu Dashboard hoặc gửi duyệt.
+
 # Đa ngôn ngữ — 07/11/2026 (giữ version 0.1.14)
 
 - Thêm 112 message cho mỗi bộ Việt (`vi`), Anh (`en`), Trung giản thể (`zh-CN`).

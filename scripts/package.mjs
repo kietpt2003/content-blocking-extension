@@ -7,7 +7,7 @@ await mkdir('artifacts', { recursive: true });
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 const filename = `content-blocking-extension-${version}.zip`;
 await rm(path.resolve('artifacts', filename), { force: true });
-execFileSync('zip', ['-qr', path.resolve('artifacts', filename), 'extension'], { cwd: 'dist' });
+execFileSync('zip', ['-qr', path.resolve('artifacts', filename), '.'], { cwd: 'dist/extension' });
 const digest = createHash('sha256')
   .update(await readFile(`artifacts/${filename}`))
   .digest('hex');
