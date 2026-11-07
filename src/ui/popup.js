@@ -7,6 +7,8 @@ let tabId;
 let diagnosticReport = null;
 let recording = false;
 const enabled = document.querySelector('#enabled');
+const xvideos = document.querySelector('#xvideos');
+const vlxx = document.querySelector('#vlxx');
 const toggle = document.querySelector('#site-toggle');
 document.querySelector('#version').textContent = chrome.runtime.getManifest().version;
 
@@ -14,6 +16,10 @@ async function render() {
   settings = await getSettings();
   enabled.checked = settings.enabled;
   enabled.disabled = false;
+  xvideos.checked = settings.sites.xvideos;
+  xvideos.disabled = false;
+  vlxx.checked = settings.sites.vlxx;
+  vlxx.disabled = false;
   toggle.textContent = settings.disabledSites.some((domain) => domainMatches(host, domain))
     ? 'Bật lại trên website này'
     : 'Tạm tắt trên website này';
@@ -123,6 +129,23 @@ document.querySelector('#clear-network').addEventListener('click', async () => {
     notice(error.message, true);
   }
 });
+
+for (const [input, site, label] of [
+  [xvideos, 'xvideos', 'XVideos'],
+  [vlxx, 'vlxx', 'VLXX'],
+]) {
+  input.addEventListener('change', async () => {
+    input.disabled = true;
+    try {
+      await updateSettings({ sites: { ...settings.sites, [site]: input.checked } });
+      await render();
+      notice(`Đã cập nhật chặn QC ${label}. Tải lại clip để áp dụng đầy đủ.`);
+    } catch (error) {
+      notice(error.message, true);
+      await render();
+    }
+  });
+}
 
 enabled.addEventListener('change', async () => {
   enabled.disabled = true;

@@ -2,6 +2,8 @@ export const SITE_DOMAINS = {
   youtube: ['youtube.com', 'youtube-nocookie.com'],
   facebook: ['facebook.com'],
   tiktok: ['tiktok.com'],
+  xvideos: ['xvideos.com'],
+  vlxx: ['vlxx.app', 'vlxx.phd'],
 };
 
 export const DEFAULTS = {
@@ -10,7 +12,7 @@ export const DEFAULTS = {
   network: true,
   cosmetic: true,
   youtubeData: true,
-  sites: { youtube: true, facebook: true, tiktok: true },
+  sites: { youtube: true, facebook: true, tiktok: true, xvideos: true, vlxx: true },
   disabledSites: [],
   customDomains: [],
   customCosmetic: [],
@@ -30,6 +32,34 @@ export const NETWORK_DOMAINS = [
 ];
 
 export const NETWORK_PATHS = [
+  {
+    // embed-vast.js waits for this supplier before it can initialize the player.
+    // Supply an empty schedule instead of blocking it and leaving playback stuck.
+    domains: ['cdn.adxcontent.com'],
+    initiatorDomains: ['vlxx.app', 'vlxx.phd', 'play.vlstream.net'],
+    resourceTypes: ['script'],
+    regex: '^https://cdn\\.adxcontent\\.com/vlxx/vl-inplayer-adx\\.js(?:\\?|$)',
+    action: { type: 'redirect', redirect: { extensionPath: '/vlxx-no-ads.js' } },
+  },
+  {
+    domains: ['cdn.adxcontent.com'],
+    initiatorDomains: ['vlxx.app', 'vlxx.phd'],
+    resourceTypes: ['script'],
+    regex: '^https://cdn\\.adxcontent\\.com/vlxx/vl-(top|underplayer|main)-adx\\.js(?:\\?|$)',
+  },
+  {
+    domains: ['cdn.adxcontent.com'],
+    initiatorDomains: ['vlxx.app', 'vlxx.phd', 'play.vlstream.net'],
+    resourceTypes: ['xmlhttprequest'],
+    regex: '^https://cdn\\.adxcontent\\.com/vlxx/tvc/[a-zA-Z0-9_-]+\\.xml(?:\\?|$)',
+  },
+  {
+    // Observed VAST endpoint on xvideos.com. Leave the content HLS CDN alone.
+    domains: ['pemsrv.com'],
+    initiatorDomains: ['xvideos.com'],
+    resourceTypes: ['xmlhttprequest'],
+    regex: '^https?://([^/]+\\.)?pemsrv\\.com/v1/vast\\.php(?:\\?|$)',
+  },
   {
     // Found in adBreakServiceRenderer.getAdBreakUrl in the user's player response.
     domains: ['youtube.com'],
@@ -58,6 +88,18 @@ export const GENERIC_SELECTORS = [
   '[id^="google_ads_iframe_"]',
   'iframe[src*="doubleclick.net/"]',
   '[data-advertisement="true"]',
+];
+
+export const VLXX_SELECTORS = [
+  '#vl-top-adx',
+  '#vl-header-adx',
+  '#vl-underplayer-adx',
+  '#vl-native-adx',
+  '.banner-preload',
+  '.catfish-top',
+  '.catfish-bottom',
+  '.banner-catfish-top',
+  '.banner-catfish-bottom',
 ];
 
 export const YOUTUBE_SELECTORS = [

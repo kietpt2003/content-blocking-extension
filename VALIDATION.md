@@ -1,3 +1,79 @@
+# Bổ sung VLXX — 07/11/2026 (giữ version 0.1.14)
+
+- Đã kiểm tra HTML, request AJAX và iframe trên trang thật. `vlxx.phd` trả 301 sang
+  `vlxx.app`. Player AJAX nhúng `play.vlstream.net`, dùng JW Player và
+  `embed-vast.js`; script này chờ `funcGetvastAdx()` rồi mới gọi `setup`.
+- Chặn chính xác script `/vlxx/vl-top-adx.js`, `vl-underplayer-adx.js`,
+  `vl-main-adx.js` trên `cdn.adxcontent.com` để ngăn banner và popunder/click hijack.
+  Thay `vl-inplayer-adx.js` bằng tài nguyên extension cấp lịch rỗng, COUNT_VAST=0
+  và callback ready không tạo banner. Không chặn script khởi tạo player hoặc nguồn HLS.
+  Quy tắc dự phòng chặn `/vlxx/tvc/*.xml` theo loại XHR và initiator đã quan sát.
+- DOM chỉ ẩn các vùng quảng cáo đã nhận diện trên hai domain VLXX. Công tắc
+  **Chặn QC VLXX** mặc định bật ở popup/options; tắt công tắc hoặc thêm ngoại lệ
+  khôi phục cả request lẫn DOM sau khi tải lại trang, kể cả iframe con.
+- Thử bản build cuối trong Chromium tạm, hai clip có đường dẫn khác nhau qua
+  `vlxx.app` và `vlxx.phd` (trang đích cuối đều là `.app`), bấm nút Play JW Player:
+  lịch rỗng, COUNT_VAST=0, cấu hình nguồn khớp `__SRC`, state=playing,
+  readyState=4, thời gian phát tăng trên 3 giây, 0 popup, 0 banner trong player,
+  0 banner top/preload/catfish nhìn thấy và 0 response thành công từ script quảng cáo.
+  Chưa kiểm tra mọi clip, server dự phòng, thiết bị hoặc sự thay đổi domain tương lai.
+- `npm test`: 29/29; `npm run check`: đạt; browser suite: 30/30. Fixture VLXX
+  kiểm tra redirect sang script extension thật trong iframe, player khởi tạo
+  không bị kẹt, giữ nguồn nội dung, banner, chặn VAST, công tắc popup và ngoại lệ
+  website trên cả `.app` và `.phd`. Không tải quảng cáo thật trong fixture.
+- Script thay thế được build/đóng gói cùng extension và chỉ khai báo web-accessible
+  cho hai domain VLXX cùng iframe provider đã quan sát. Không cần quyền mới.
+
+# Bổ sung XVideos — 07/11/2026 (giữ version 0.1.14)
+
+## Công tắc Chặn QC XVideos
+
+- Có công tắc riêng ở popup và trang cài đặt, lưu qua `sites.xvideos`.
+  Cấu hình cũ được bổ sung mặc định `true` và giữ các lựa chọn website khác.
+- Công tắc chi phối đăng ký hook MAIN, trạng thái hook trong tab đã mở và quy tắc
+  ngoại lệ DNR cho `xvideos.com`. Tải lại clip sau khi đổi để áp dụng đầy đủ.
+- `npm test`: 27/27; browser suite: 29/29; format check và package đạt.
+  Browser test mới thao tác công tắc options/popup, tải lại trang để kiểm tra lưu
+  trạng thái, xác nhận hook và request VAST thực sự đổi từ blocked sang allowed
+  rồi blocked. Không gửi request quảng cáo thật; endpoint được đáp bằng fixture.
+
+## Kiểm tra lại theo thao tác bấm Play
+
+- Người dùng báo quảng cáo vẫn xuất hiện khi bấm xem clip. Lần kiểm tra trước
+  gọi `video.play()` trực tiếp nên không chứng minh luồng bấm Play của player.
+- Kiểm tra Chrome thực tế: bản UNPACKED từ `dist/extension` đã được nạp và bật,
+  bản Store đã tắt, nhưng bản UNPACKED có `incognitoAccess.isActive=false`.
+  Đã bật quyền ẩn danh cho đúng bản UNPACKED; đọc lại xác nhận `isActive=true`.
+- Mở trang clip mới trong tab ẩn danh người dùng và bấm `#anc-tst-play-btn`:
+  video gốc phát, thời gian tăng, `readyState=4`, không có request VAST.
+  Sau đó kiểm tra thêm 4 ID clip khác nhau ngay trong tab này: cả 4 bấm Play
+  phát được nội dung, thời gian tăng quá 4 giây, `readyState=4`, 0 request VAST
+  và không thấy phần tử skip/pre-roll/video-ad trong player. Tạm dừng khi kết thúc.
+- Chromium tạm cũng thử nút Play qua 4 clip khác nhau với bản sửa: 4/4 phát,
+  hook có mặt và 0 request VAST. Phiên đối chứng tắt Network cũng không nhận
+  quảng cáo, vì vậy không dùng đối chứng này để khẳng định tái hiện được chu kỳ
+  quảng cáo. Không thay mã blocker chỉ dựa trên một lần người dùng báo còn quảng cáo.
+
+## Kết quả lần kiểm tra đầu
+
+- Đã đọc DOM, script player và resource timing trên tab ẩn danh người dùng chỉ định.
+  Quan sát request quảng cáo `s.pemsrv.com/v1/vast.php`. Mã player công khai có
+  `nbView_increment`, xét `(1 + nbView_getNbView()) % 2` để quyết định pre-roll.
+- Bản Chrome Web Store đang cài có quyền ẩn danh chưa bật. Không sửa bản cài Store
+  hoặc tự nhận bản sửa đã được áp dụng vào tab Chrome cá nhân.
+- Bản sửa dùng MAIN hook trước constructor; `_checkVideoAdsCommon` trả false khi
+  bật lọc Network. Không sửa bộ đếm trong cookie/localStorage hoặc thay URL media.
+- Kiểm tra trực tiếp cùng trang phát đã mở bằng Chromium tạm, extension build thật,
+  ba lượt tải cùng clip: cả ba có hook, 0 request VAST, HLS tải bình thường, video
+  `readyState=4`, `paused=false`, thời gian phát tăng. Không lưu hình ảnh hoặc video.
+  Đây là một clip/phiên kiểm tra, chưa chứng minh mọi clip, tài khoản hoặc CDN.
+- `npm test`: 26/26; `npm run check`: đạt; browser suite: 28/28. Fixture mới kiểm tra
+  hook chạy trước script player, giữ nguồn nội dung, bật/tắt Network trong trang đang
+  mở và ngoại lệ domain khi tải trang mới.
+- Chromium kiểm thử được tải vào `/private/tmp/content-blocker-playwright` vì máy
+  chưa có bản browser đúng với Playwright. Lệnh chạy:
+  `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/content-blocker-playwright npm run test:browser`.
+
 # Kết quả bản 0.1.14 — 31/10/2026
 
 ## Tốc độ khởi phát YouTube trên Chrome/profile người dùng

@@ -81,6 +81,172 @@ test.afterEach(async () => {
   for (const page of context.pages()) if (page !== control) await page.close();
 });
 
+test('XVideos early ad gate preserves content and restores native behavior when disabled', async () => {
+  await setSettings();
+  const html = `<html><head><script>
+    function Player() { this.source = 'content.m3u8'; }
+    window.HTML5Player = Player;
+    Player.prototype = { _checkVideoAdsCommon: function() { return true; } };
+    window.player = new HTML5Player();
+    window.earlyAdAllowed = player._checkVideoAdsCommon('preroll');
+  </script></head><body>Player fixture</body></html>`;
+  const page = await fixture('https://www.xvideos.com/video.fixture/test', html);
+  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
+  expect(await page.evaluate(() => player.source)).toBe('content.m3u8');
+  await setSettings({ network: false });
+  await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('preroll'))).toBe(true);
+  await setSettings();
+  await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('postroll'))).toBe(false);
+  await page.close();
+  await setSettings({ disabledSites: ['xvideos.com'] });
+  const excluded = await fixture('https://www.xvideos.com/video.fixture/excluded', html);
+  expect(await excluded.evaluate(() => window.earlyAdAllowed)).toBe(true);
+  await excluded.close();
+  await setSettings();
+});
+
+test('XVideos switch in settings and popup controls both player and VAST requests', async () => {
+  const page = await fixture(
+    'https://www.xvideos.com/video.fixture/switch',
+    `<script>
+    window.HTML5Player = function() {};
+    HTML5Player.prototype._checkVideoAdsCommon = function() { return true; };
+    window.player = new HTML5Player();
+    window.earlyAdAllowed = player._checkVideoAdsCommon('preroll');
+  </script>`,
+  );
+  await page.route('https://s.pemsrv.com/**', (route) =>
+    route.fulfill({
+      contentType: 'text/plain',
+      headers: { 'access-control-allow-origin': '*' },
+      body: 'allowed',
+    }),
+  );
+  const fetchAd = () =>
+    page.evaluate(async () => {
+      try {
+        return await (await fetch('https://s.pemsrv.com/v1/vast.php?fixture=' + Date.now())).text();
+      } catch {
+        return 'blocked';
+      }
+    });
+  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
+  expect(await fetchAd()).toBe('blocked');
+  await control.reload();
+  await expect(control.locator('#xvideos')).toBeChecked();
+  await control.locator('#xvideos').uncheck();
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('preroll'))).toBe(true);
+  expect(await fetchAd()).toBe('allowed');
+  await page.reload();
+  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(true);
+  await control.reload();
+  await expect(control.locator('#xvideos')).not.toBeChecked();
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.locator('#xvideos')).toBeEnabled();
+  await expect(popup.locator('#xvideos')).not.toBeChecked();
+  await popup.locator('#xvideos').check();
+  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC XVideos');
+  await page.reload();
+  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
+  expect(await fetchAd()).toBe('blocked');
+  await control.reload();
+  await expect(control.locator('#xvideos')).toBeChecked();
+  expect(
+    (await control.evaluate(() => chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }))).settings
+      .sites.youtube,
+  ).toBe(true);
+});
+
+test('VLXX blocks popunder scripts and supplies an empty schedule without stalling the iframe player', async () => {
+  const supplierURL = 'https://cdn.adxcontent.com/vlxx/vl-inplayer-adx.js?v=123';
+  const vastURL = 'https://cdn.adxcontent.com/vlxx/tvc/man88.xml';
+  const page = await context.newPage();
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.protocol === 'chrome-extension:') return route.continue();
+    let contentType = 'text/html';
+    let body = '';
+    if (url.hostname === 'play.vlstream.net') {
+      body = `<script src="${supplierURL}"></script><script>
+        window.originalSources = [{file:'https://media.example.test/content.m3u8'}];
+        const timer = setInterval(() => {
+          if (typeof window.funcGetvastAdx !== 'function') return;
+          clearInterval(timer);
+          window.playerConfig = {sources: originalSources, schedule: funcGetvastAdx()};
+          window.fixtureReady = true;
+        }, 10);
+      </script><button id="play" onclick="window.fixturePlaying=!!window.fixtureReady">Play</button>`;
+    } else if (url.hostname === 'cdn.adxcontent.com') {
+      contentType = 'application/javascript';
+      body = url.pathname.includes('inplayer')
+        ? `window.COUNT_VAST=2;window.nativeSupplier=true;window.funcGetvastAdx=()=>[{tag:'${vastURL}'}];window.funcJWonReadyVAST=()=>{};`
+        : 'window.popunderScriptLoaded=true;';
+    } else {
+      body = `<div id="vl-top-adx">Banner</div><div class="banner-preload">Popup</div>
+        <a id="organic" href="#content">Content</a><div id="content">Original content</div>
+        <script src="https://cdn.adxcontent.com/vlxx/vl-main-adx.js"></script>
+        <iframe src="https://play.vlstream.net/embed/fixture"></iframe>`;
+    }
+    await route.fulfill({ contentType, body, headers: { 'access-control-allow-origin': '*' } });
+  });
+  for (const host of ['vlxx.app', 'vlxx.phd']) {
+    await setSettings();
+    await page.goto(`https://${host}/video/fixture`);
+    let frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
+    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
+    expect(await frame.evaluate(() => window.COUNT_VAST)).toBe(0);
+    expect(await frame.evaluate(() => window.playerConfig.schedule)).toEqual([]);
+    expect(await frame.evaluate(() => window.playerConfig.sources === window.originalSources)).toBe(
+      true,
+    );
+    await frame.locator('#play').click();
+    expect(await frame.evaluate(() => window.fixturePlaying)).toBe(true);
+    expect(await page.evaluate(() => window.popunderScriptLoaded)).toBeUndefined();
+    await expect(page.locator('#vl-top-adx')).toBeHidden();
+    await expect(page.locator('.banner-preload')).toBeHidden();
+    await expect(page.locator('#organic')).toBeVisible();
+    const fetchAd = () =>
+      frame.evaluate(async (url) => {
+        try {
+          await fetch(url);
+          return 'allowed';
+        } catch {
+          return 'blocked';
+        }
+      }, vastURL);
+    expect(await fetchAd()).toBe('blocked');
+    const popup = await context.newPage();
+    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+    await expect(popup.locator('#vlxx')).toBeChecked();
+    await popup.locator('#vlxx').uncheck();
+    await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VLXX');
+    await expect(page.locator('#vl-top-adx')).toBeVisible();
+    await page.reload();
+    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
+    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
+    expect(await frame.evaluate(() => window.nativeSupplier)).toBe(true);
+    expect(await frame.evaluate(() => window.playerConfig.schedule.length)).toBe(1);
+    expect(await page.evaluate(() => window.popunderScriptLoaded)).toBe(true);
+    expect(await fetchAd()).toBe('allowed');
+    await popup.locator('#vlxx').check();
+    await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VLXX');
+    await page.reload();
+    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
+    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
+    expect(await frame.evaluate(() => window.playerConfig.schedule)).toEqual([]);
+    await popup.close();
+    await setSettings({ disabledSites: [host] });
+    await page.reload();
+    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
+    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
+    expect(await frame.evaluate(() => window.nativeSupplier)).toBe(true);
+    expect(await fetchAd()).toBe('allowed');
+  }
+});
+
 test('Facebook hides marked ads, keeps ordinary text, and handles recycled/lazy feed nodes', async () => {
   const page = await fixture(
     'https://www.facebook.com/__fixture__',

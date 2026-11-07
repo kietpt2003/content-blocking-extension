@@ -32,6 +32,23 @@ chạy trên ESP32. Node.js chỉ dùng để build/test; extension chạy trự
   khối lân cận. Đây là lọc HTML, cần bật Ẩn thành phần HTML và Facebook; không chặn
   rộng fbcdn.net. Không tìm chữ "Sponsored" trên toàn bộ nội dung bài viết.
 - **TikTok:** nhận diện thẻ feed có metadata sponsored/ad-label.
+- **XVideos (`xvideos.com`):** công tắc **Chặn QC XVideos** có ở popup và trang cài đặt,
+  mặc định bật; cấu hình cũ tự bổ sung công tắc mà không đổi lựa chọn website khác.
+  Khi bật công tắc và lọc Network, hook MAIN tại `document_start`
+  chặn nhánh kiểm tra pre-roll/post-roll của HTML5Player, giữ nguồn HLS và player gốc.
+  Có quy tắc dự phòng giới hạn request `/v1/vast.php` của `pemsrv.com` do trang này
+  khởi tạo. Tắt công tắc XVideos, Network/bộ lọc hoặc thêm ngoại lệ domain để dừng xử lý.
+  Tải lại clip sau khi đổi công tắc để áp dụng đầy đủ.
+  Không phụ thuộc bộ đếm clip chẵn/lẻ. Cần tải lại trang sau khi nạp bản extension mới;
+  dùng cửa sổ ẩn danh cần bật **Allow in Incognito** trong trang Details của extension.
+- **VLXX (`vlxx.app`, `vlxx.phd`):** công tắc **Chặn QC VLXX** ở popup và trang cài đặt,
+  mặc định bật. Chặn các script banner/popunder đã nhận diện và các VAST tag trong
+  `/vlxx/tvc/`; thay riêng script cung cấp lịch quảng cáo bằng lịch rỗng để JW Player
+  vẫn khởi tạo với nguồn clip gốc trong iframe `play.vlstream.net`. Không chặn thư viện
+  JW Player hoặc script khởi tạo `embed-vast.js` dùng chung với nội dung.
+  Cần bật Chặn domain / URL cho phần player/popup và Ẩn thành phần HTML cho các
+  vị trí banner. Tải lại clip sau khi đổi công tắc. Ngoại lệ website vẫn được ưu tiên.
+  `vlxx.phd` hiện chuyển hướng sang `vlxx.app`; bộ lọc nhận diện cả hai tên miền.
 - **Website khác:** domain quảng cáo chung, ad slot phổ biến và CSS selector do bạn thêm.
 
 Đây là bộ quy tắc khởi đầu có thể mở rộng, **không phải bản sao uBlock Origin** và
@@ -283,7 +300,7 @@ Các quy tắc trang động cần duy trì thêm fixture khi phát hiện DOM/A
 npm run package
 ```
 
-Tạo `artifacts/content-blocking-extension-0.1.10.zip` và `SHA256SUMS`.
+Tạo `artifacts/content-blocking-extension-<version>.zip` và `SHA256SUMS`.
 Giải nén ZIP rồi Load unpacked thư mục `extension`. ZIP không phải CRX đã ký và chưa
 được phát hành lên Chrome Web Store. Script đóng gói yêu cầu lệnh `zip` (macOS/Linux).
 

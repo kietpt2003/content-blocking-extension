@@ -2,7 +2,7 @@ import { parseCosmetic, parseLines, validateSettings } from '../core/settings.js
 import { getSettings, notice, updateSettings } from './shared.js';
 
 const fields = ['enabled', 'network', 'cosmetic', 'youtubeData'];
-const sites = ['youtube', 'facebook', 'tiktok'];
+const sites = ['youtube', 'facebook', 'tiktok', 'xvideos', 'vlxx'];
 const byId = (id) => document.getElementById(id);
 document.querySelector('.version').textContent = chrome.runtime.getManifest().version;
 

@@ -2,7 +2,7 @@ import { DEFAULTS } from './config/defaults.js';
 import { validateSettings } from './core/settings.js';
 import { compileNetworkRules } from './core/network.js';
 import './network-capture.js';
-import { applyYouTubePageScript } from './core/page-scripts.js';
+import { applyYouTubePageScript, applyXVideosPageScript } from './core/page-scripts.js';
 
 let queue = Promise.resolve();
 function serial(operation) {
@@ -27,6 +27,7 @@ async function applyRules(settings) {
 async function applyPolicy(settings) {
   await applyRules(settings);
   await applyYouTubePageScript(settings, chrome.scripting);
+  await applyXVideosPageScript(settings, chrome.scripting);
 }
 
 async function saveSettings(patch) {

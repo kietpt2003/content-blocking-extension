@@ -1,5 +1,10 @@
 import { DEFAULTS } from '../config/defaults.js';
-import { filteringEnabled, siteForHost, validateSettings } from '../core/settings.js';
+import {
+  domainMatches,
+  filteringEnabled,
+  siteForHost,
+  validateSettings,
+} from '../core/settings.js';
 import { DomEngine } from './dom-engine.js';
 import { YouTubePrompts } from './youtube-prompts.js';
 
@@ -47,6 +52,13 @@ function sendPageState() {
   // The registered MAIN script already has the correct startup policy. Do not
   // overwrite it with DEFAULTS while the real storage response is pending.
   if (!settingsLoaded) return;
+  if (domainMatches(host, 'xvideos.com')) {
+    document.dispatchEvent(
+      new CustomEvent('home-blocker:xvideos-settings', {
+        detail: JSON.stringify({ enabled: filteringEnabled(settings, host) && settings.network }),
+      }),
+    );
+  }
   document.dispatchEvent(
     new CustomEvent('home-blocker:settings', {
       detail: JSON.stringify({
@@ -69,6 +81,7 @@ function apply(value) {
 }
 
 document.addEventListener('home-blocker:ready', sendPageState);
+document.addEventListener('home-blocker:xvideos-ready', sendPageState);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? DEFAULTS);
 });

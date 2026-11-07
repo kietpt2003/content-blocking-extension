@@ -10,6 +10,8 @@ await build({
     background: 'src/background.js',
     content: 'src/content/index.js',
     'youtube-main': 'src/content/youtube-main.js',
+    'xvideos-main': 'src/content/xvideos-main.js',
+    'vlxx-no-ads': 'src/content/vlxx-no-ads.js',
     popup: 'src/ui/popup.js',
     options: 'src/ui/options.js',
   },

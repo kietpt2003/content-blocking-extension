@@ -13,7 +13,7 @@ export function compileNetworkRules(settings) {
     rules.push({
       id: id++,
       priority: 1,
-      action: { type: 'block' },
+      action: entry.action ?? { type: 'block' },
       condition: {
         requestDomains: entry.domains,
         regexFilter: entry.regex,
