@@ -1,12 +1,12 @@
 export default {
   extension_name: {
-    message: 'Home Content Blocker',
+    message: 'Leaf Content Guard',
   },
   extension_description: {
     message: '拦截广告域名，过滤 YouTube、Facebook、TikTok 及其他网站的页面元素。',
   },
   options_title: {
-    message: '设置 · Home Content Blocker',
+    message: '设置 · Leaf Content Guard',
   },
   options_tagline: {
     message: '你的规则，保存在你的浏览器中。',
@@ -47,33 +47,6 @@ export default {
   website_title: {
     message: '按平台设置规则',
   },
-  xvideos_label: {
-    message: '拦截 XVideos 广告',
-  },
-  vlxx_label: {
-    message: '拦截 VLXX 广告',
-  },
-  viet69_label: {
-    message: '拦截 Viet69 广告',
-  },
-  vnsextop_label: {
-    message: '拦截 VNSexTop 广告',
-  },
-  xvideos_hint: {
-    message: '跳过片头及片尾广告。需启用域名 / URL 拦截；更改后请重新加载视频。',
-  },
-  vlxx_hint: {
-    message:
-      '适用于 vlxx.app 和 vlxx.phd。需启用域名 / URL 拦截及页面元素隐藏；更改后请重新加载视频。',
-  },
-  viet69_hint: {
-    message:
-      '适用于 viet69.be。拦截横幅广告及点击时打开的广告标签页。需启用域名 / URL 拦截及页面元素隐藏；更改后请重新加载页面。',
-  },
-  vnsextop_hint: {
-    message:
-      'vnsextop1.pro。拦截横幅广告及点击时打开的广告标签页。需启用域名 / URL 拦截及页面元素隐藏；更改后请重新加载页面。',
-  },
   youtube_data_label: {
     message: '实验功能：YouTube JSON',
   },
@@ -90,6 +63,16 @@ export default {
   custom_title: {
     message: '域名与 HTML',
   },
+  error_player_domain: {
+    message:
+      '播放器模式无效：{value}。请输入域名或 https://*.example.com/*；不支持特定路径、端口或查询参数。',
+  },
+  player_domains_label: { message: '播放器干预域名' },
+  player_domains_hint: {
+    message:
+      '默认为空。输入域名或 HTTPS 匹配模式，例如 video.example.com、https://video.example.com/* 或 https://*.video.example.com/*。这些形式均适用于整个域名及子域名。需要开启域名 / URL 拦截；保存后重新加载页面。仅支持兼容的播放器 API。',
+  },
+  player_domains_guide: { message: '参考域名与播放器限制' },
   custom_domains_label: {
     message: '需要拦截的其他域名',
   },
@@ -133,18 +116,6 @@ export default {
   },
   popup_enabled_hint: {
     message: '域名与页面内容',
-  },
-  popup_xvideos_hint: {
-    message: '更改后请重新加载视频；需在设置中启用域名 / URL 拦截。',
-  },
-  popup_vlxx_hint: {
-    message: 'vlxx.app / vlxx.phd。更改后请重新加载；需在设置中启用 URL 拦截及页面元素隐藏。',
-  },
-  popup_viet69_hint: {
-    message: 'viet69.be。更改后请重新加载；需在设置中启用 URL 拦截及页面元素隐藏。',
-  },
-  popup_vnsextop_hint: {
-    message: 'vnsextop1.pro。更改后请重新加载；需在设置中启用 URL 拦截及页面元素隐藏。',
   },
   popup_current: {
     message: '当前页面',
@@ -295,7 +266,7 @@ export default {
     message: '设置包含不支持的字段。',
   },
   error_schema: {
-    message: 'schemaVersion 必须为 1。',
+    message: '仅支持 schemaVersion 1 或 2。',
   },
   error_boolean: {
     message: '{field} 必须为布尔值。',

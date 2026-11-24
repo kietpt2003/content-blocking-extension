@@ -1,13 +1,13 @@
 export default {
   extension_name: {
-    message: 'Home Content Blocker',
+    message: 'Leaf Content Guard',
   },
   extension_description: {
     message:
       'Block ad domains and filter page elements on YouTube, Facebook, TikTok and other websites.',
   },
   options_title: {
-    message: 'Settings · Home Content Blocker',
+    message: 'Settings · Leaf Content Guard',
   },
   options_tagline: {
     message: 'Your rules. Stored in your browser.',
@@ -48,34 +48,6 @@ export default {
   website_title: {
     message: 'Rules by platform',
   },
-  xvideos_label: {
-    message: 'Block XVideos ads',
-  },
-  vlxx_label: {
-    message: 'Block VLXX ads',
-  },
-  viet69_label: {
-    message: 'Block Viet69 ads',
-  },
-  vnsextop_label: {
-    message: 'Block VNSexTop ads',
-  },
-  xvideos_hint: {
-    message:
-      'Skip pre-roll and post-roll ads. Requires domain / URL blocking; reload the video after changing this setting.',
-  },
-  vlxx_hint: {
-    message:
-      'Applies to vlxx.app and vlxx.phd. Enable domain / URL blocking and page element hiding; reload the video after changing this setting.',
-  },
-  viet69_hint: {
-    message:
-      'Applies to viet69.be. Blocks banners and ad tabs opened by clicks. Enable domain / URL blocking and page element hiding; reload after changing this setting.',
-  },
-  vnsextop_hint: {
-    message:
-      'vnsextop1.pro. Blocks banners and ad tabs opened by clicks. Enable domain / URL blocking and page element hiding; reload after changing this setting.',
-  },
   youtube_data_label: {
     message: 'Experimental: YouTube JSON',
   },
@@ -93,6 +65,16 @@ export default {
   custom_title: {
     message: 'Domains & HTML',
   },
+  error_player_domain: {
+    message:
+      'Invalid player pattern: {value}. Use a domain or https://*.example.com/*; specific paths, ports and queries are not supported.',
+  },
+  player_domains_label: { message: 'Player intervention domains' },
+  player_domains_hint: {
+    message:
+      'Empty by default. Enter a domain or HTTPS pattern, e.g. video.example.com, https://video.example.com/* or https://*.video.example.com/*. All forms cover the entire domain and subdomains. Requires domain / URL blocking; save and reload the page. Compatible player APIs only.',
+  },
+  player_domains_guide: { message: 'Reference domains and player limitations' },
   custom_domains_label: {
     message: 'Additional domains to block',
   },
@@ -137,22 +119,6 @@ export default {
   },
   popup_enabled_hint: {
     message: 'Domains and page content',
-  },
-  popup_xvideos_hint: {
-    message:
-      'Reload the video after changing this setting; requires domain / URL blocking in settings.',
-  },
-  popup_vlxx_hint: {
-    message:
-      'vlxx.app / vlxx.phd. Reload after changing this setting; enable URL blocking and page element hiding in settings.',
-  },
-  popup_viet69_hint: {
-    message:
-      'viet69.be. Reload after changing this setting; enable URL blocking and page element hiding in settings.',
-  },
-  popup_vnsextop_hint: {
-    message:
-      'vnsextop1.pro. Reload after changing this setting; enable URL blocking and page element hiding in settings.',
   },
   popup_current: {
     message: 'CURRENT PAGE',
@@ -309,7 +275,7 @@ export default {
     message: 'Settings contain an unsupported field.',
   },
   error_schema: {
-    message: 'schemaVersion must be 1.',
+    message: 'Only schemaVersion 1 or 2 is supported.',
   },
   error_boolean: {
     message: '{field} must be a boolean.',

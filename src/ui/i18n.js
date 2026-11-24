@@ -17,7 +17,7 @@ export function setLanguage(value) {
   if (!changed) return;
   language = next;
   localizePage();
-  if (changed) document.dispatchEvent(new Event('home-blocker:language-changed'));
+  if (changed) document.dispatchEvent(new Event('leaf-content-guard:language-changed'));
 }
 
 localizePage();

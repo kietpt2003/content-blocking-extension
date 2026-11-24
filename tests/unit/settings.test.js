@@ -29,7 +29,7 @@ test('settings normalize duplicates and reject unsafe or unsupported input', () 
     { sites: { instagram: true } },
     { customDomains: ['https://ads.example.com'] },
     { customCosmetic: [{ domain: 'example.com', selector: '</style>' }] },
-    { schemaVersion: 2 },
+    { schemaVersion: 3 },
   ]) {
     assert.throws(() => validateSettings(input));
   }

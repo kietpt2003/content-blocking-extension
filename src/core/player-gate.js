@@ -1,6 +1,6 @@
 // The site's constructor is assigned before its prototype is populated. Patch
 // when it is read for construction, so the ad gate exists before initPlayer.
-export function installXVideosAdGate(target) {
+export function installPlayerAdGate(target) {
   let enabled = true;
   const wrappers = new WeakSet();
   function patch(constructor) {
@@ -14,7 +14,7 @@ export function installXVideosAdGate(target) {
       prototype._checkVideoAdsCommon = wrapper;
       wrappers.add(wrapper);
     } catch {
-      // A future player may seal its API; the narrow network rule still applies.
+      // Leave protected player APIs unchanged.
     }
   }
   const descriptor = Object.getOwnPropertyDescriptor(target, 'HTML5Player');

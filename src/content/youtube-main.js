@@ -27,7 +27,7 @@ startup.configure(enabled);
 
 function publish() {
   document.dispatchEvent(
-    new CustomEvent('home-blocker:diagnostics', {
+    new CustomEvent('leaf-content-guard:diagnostics', {
       detail: JSON.stringify({ version, enabled, hooks, ...counters }),
     }),
   );
@@ -114,7 +114,7 @@ for (const name of ['ytInitialPlayerResponse', 'ytInitialData']) {
   }
 }
 
-document.addEventListener('home-blocker:settings', (event) => {
+document.addEventListener('leaf-content-guard:settings', (event) => {
   try {
     enabled = JSON.parse(event.detail).youtubeData === true;
   } catch {
@@ -125,7 +125,7 @@ document.addEventListener('home-blocker:settings', (event) => {
   cleanInitialData();
   publish();
 });
-document.addEventListener('home-blocker:diagnostics-request', publish);
+document.addEventListener('leaf-content-guard:diagnostics-request', publish);
 for (const event of ['DOMContentLoaded', 'yt-navigate-finish', 'yt-page-data-updated']) {
   document.addEventListener(event, cleanInitialData);
 }
@@ -249,4 +249,4 @@ if (textDescriptor?.configurable && responseDescriptor?.configurable) {
   hooks.xhr = true;
 }
 publish();
-document.dispatchEvent(new CustomEvent('home-blocker:ready'));
+document.dispatchEvent(new CustomEvent('leaf-content-guard:ready'));

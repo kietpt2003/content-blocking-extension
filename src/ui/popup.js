@@ -8,10 +8,6 @@ let tabId;
 let diagnosticReport = null;
 let recording = false;
 const enabled = document.querySelector('#enabled');
-const xvideos = document.querySelector('#xvideos');
-const vlxx = document.querySelector('#vlxx');
-const viet69 = document.querySelector('#viet69');
-const vnsextop = document.querySelector('#vnsextop');
 const toggle = document.querySelector('#site-toggle');
 document.querySelector('#version').textContent = chrome.runtime.getManifest().version;
 
@@ -23,7 +19,7 @@ function renderHidden() {
   const [before, after] = t('popup_hidden').split('{count}');
   document.querySelector('#hidden-summary').replaceChildren(before, number, after);
 }
-document.addEventListener('home-blocker:language-changed', () => {
+document.addEventListener('leaf-content-guard:language-changed', () => {
   if (settings) void render().catch((error) => notice(error.message, true));
 });
 
@@ -33,14 +29,6 @@ async function render() {
   renderHidden();
   enabled.checked = settings.enabled;
   enabled.disabled = false;
-  xvideos.checked = settings.sites.xvideos;
-  xvideos.disabled = false;
-  vlxx.checked = settings.sites.vlxx;
-  vlxx.disabled = false;
-  viet69.checked = settings.sites.viet69;
-  viet69.disabled = false;
-  vnsextop.checked = settings.sites.vnsextop;
-  vnsextop.disabled = false;
   toggle.textContent = settings.disabledSites.some((domain) => domainMatches(host, domain))
     ? t('site_enable')
     : t('site_disable');
@@ -157,25 +145,6 @@ document.querySelector('#clear-network').addEventListener('click', async () => {
     notice(error.message, true);
   }
 });
-
-for (const [input, site, label] of [
-  [xvideos, 'xvideos', 'XVideos'],
-  [vlxx, 'vlxx', 'VLXX'],
-  [viet69, 'viet69', 'Viet69'],
-  [vnsextop, 'vnsextop', 'VNSexTop'],
-]) {
-  input.addEventListener('change', async () => {
-    input.disabled = true;
-    try {
-      await updateSettings({ sites: { ...settings.sites, [site]: input.checked } });
-      await render();
-      notice('ads_updated', false, { site: label });
-    } catch (error) {
-      notice(error.message, true);
-      await render();
-    }
-  });
-}
 
 enabled.addEventListener('change', async () => {
   enabled.disabled = true;

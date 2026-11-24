@@ -21,6 +21,6 @@ export function notice(message, error = false, parameters = {}) {
   status.textContent = t(message, parameters);
   status.dataset.error = String(error);
 }
-document.addEventListener('home-blocker:language-changed', () => {
+document.addEventListener('leaf-content-guard:language-changed', () => {
   if (lastNotice) notice(lastNotice.message, lastNotice.error, lastNotice.parameters);
 });

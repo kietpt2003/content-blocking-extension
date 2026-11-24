@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title data-i18n="options_title">Cài đặt · Home Content Blocker</title>
+    <title data-i18n="options_title">Cài đặt · Leaf Content Guard</title>
     <link rel="stylesheet" href="ui.css" />
   </head>
   <body class="options">
     <header>
       <img src="icons/48.png" width="44" height="44" alt="" />
       <div>
-        <h1 data-i18n="extension_name">Home Content Blocker</h1>
+        <h1 data-i18n="extension_name">Leaf Content Guard</h1>
         <p class="muted" data-i18n="options_tagline">
           Quy tắc của bạn. Lưu trên trình duyệt của bạn.
         </p>
@@ -64,42 +64,7 @@
             ><label><input id="facebook" type="checkbox" /> Facebook</label
             ><label><input id="tiktok" type="checkbox" /> TikTok</label>
           </div>
-          <label class="switch-row"
-            ><span
-              ><strong data-i18n="xvideos_label">Chặn QC XVideos</strong
-              ><small data-i18n="xvideos_hint"
-                >Bỏ quảng cáo trước và sau clip. Cần bật Chặn domain / URL; tải lại clip sau khi
-                đổi.</small
-              ></span
-            ><input id="xvideos" type="checkbox" role="switch"
-          /></label>
-          <label class="switch-row"
-            ><span
-              ><strong data-i18n="vlxx_label">Chặn QC VLXX</strong
-              ><small data-i18n="vlxx_hint"
-                >Áp dụng cho vlxx.app và vlxx.phd. Cần bật Chặn domain / URL và Ẩn thành phần HTML;
-                tải lại clip sau khi đổi.</small
-              ></span
-            ><input id="vlxx" type="checkbox" role="switch"
-          /></label>
-          <label class="switch-row"
-            ><span
-              ><strong data-i18n="viet69_label">Chặn QC Viet69</strong
-              ><small data-i18n="viet69_hint"
-                >Áp dụng cho viet69.be. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain /
-                URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.</small
-              ></span
-            ><input id="viet69" type="checkbox" role="switch"
-          /></label>
-          <label class="switch-row"
-            ><span
-              ><strong data-i18n="vnsextop_label">Chặn QC VNSexTop</strong
-              ><small data-i18n="vnsextop_hint"
-                >vnsextop1.pro. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain / URL và
-                Ẩn thành phần HTML; tải lại trang sau khi đổi.</small
-              ></span
-            ><input id="vnsextop" type="checkbox" role="switch"
-          /></label>
+
           <label class="switch-row"
             ><span
               ><strong data-i18n="youtube_data_label">Thử nghiệm: JSON YouTube</strong
@@ -113,6 +78,31 @@
             Không bảo đảm bỏ mọi quảng cáo trong video. Facebook/TikTok chỉ ẩn các bài có dấu hiệu
             quảng cáo được nhận diện; không tìm theo toàn bộ nội dung bài viết.
           </p>
+        </section>
+        <section class="card" id="player-settings">
+          <label for="playerDomains" data-i18n="player_domains_label"
+            >Domain can thiệp player</label
+          >
+          <textarea
+            id="playerDomains"
+            rows="3"
+            spellcheck="false"
+            placeholder="https://video.example.com/*&#10;https://*.video.example.com/*"
+          ></textarea>
+          <p class="hint" data-i18n="player_domains_hint">
+            Mặc định trống. Nhập domain hoặc mẫu HTTPS, ví dụ video.example.com,
+            https://video.example.com/* hoặc https://*.video.example.com/*. Các dạng này đều áp dụng
+            toàn domain và subdomain. Cần bật Chặn domain / URL; lưu rồi tải lại trang. Chỉ hỗ trợ
+            player có API tương thích.
+          </p>
+          <a
+            href="https://kietpt2003.github.io/content-blocking-policy/?lang=vi#vi-player-filters"
+            id="player-guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="player_domains_guide"
+            >Danh sách tham khảo và giới hạn player</a
+          >
         </section>
         <section class="card">
           <span class="eyebrow" data-i18n="custom_heading">QUY TẮC RIÊNG</span>

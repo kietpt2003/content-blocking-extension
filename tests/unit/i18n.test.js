@@ -51,11 +51,13 @@ test('static UI translation keys exist in every catalog', () => {
 
 test('language migration preserves filtering policy and validation errors follow the chosen language', () => {
   const migrated = validateSettings({
-    sites: { xvideos: false },
+    schemaVersion: 1,
+    sites: { retiredPlatform: false },
     customDomains: ['ads.example.com'],
   });
   assert.equal(migrated.language, 'vi');
-  assert.equal(migrated.sites.xvideos, false);
+  assert.equal(Object.hasOwn(migrated.sites, 'retiredPlatform'), false);
+  assert.deepEqual(migrated.playerDomains, []);
   assert.deepEqual(migrated.customDomains, ['ads.example.com']);
   for (const language of LANGUAGES) {
     assert.equal(validateSettings({ language }).language, language);

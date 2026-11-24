@@ -2,14 +2,10 @@ export const SITE_DOMAINS = {
   youtube: ['youtube.com', 'youtube-nocookie.com'],
   facebook: ['facebook.com'],
   tiktok: ['tiktok.com'],
-  xvideos: ['xvideos.com'],
-  vlxx: ['vlxx.app', 'vlxx.phd'],
-  viet69: ['viet69.be'],
-  vnsextop: ['vnsextop1.pro'],
 };
 
 export const DEFAULTS = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   language: 'vi',
   enabled: true,
   network: true,
@@ -19,13 +15,10 @@ export const DEFAULTS = {
     youtube: true,
     facebook: true,
     tiktok: true,
-    xvideos: true,
-    vlxx: true,
-    viet69: true,
-    vnsextop: true,
   },
   disabledSites: [],
   customDomains: [],
+  playerDomains: [],
   customCosmetic: [],
 };
 
@@ -43,61 +36,6 @@ export const NETWORK_DOMAINS = [
 ];
 
 export const NETWORK_PATHS = [
-  {
-    // Observed on vnsextop1.pro: two click/popunder loaders, bn.js banner
-    // slots and the independent inline-loaded thickteaching script.
-    domains: [
-      'driverhugoverblown.com',
-      'astronautlividlyreformer.com',
-      'earmuffpostnasalrisotto.com',
-      'thickteaching.com',
-    ],
-    initiatorDomains: ['vnsextop1.pro'],
-    regex:
-      '^https?://([^/]+\\.)?(driverhugoverblown\\.com|astronautlividlyreformer\\.com|earmuffpostnasalrisotto\\.com|thickteaching\\.com)/',
-  },
-  {
-    // Live Viet69 .app-ad slot: bn.js creates the __clb-spot iframe and images.
-    domains: ['vertigovitalitywieldable.com'],
-    initiatorDomains: ['viet69.be'],
-    regex: '^https://([^/]+\\.)?vertigovitalitywieldable\\.com/',
-  },
-  {
-    // Observed Viet69 banner and click/popunder scripts. Keep the player API,
-    // emb.cd-vs.com iframe and cdn.viedn.net site/player assets available.
-    domains: ['cdn2.vietadx.net'],
-    initiatorDomains: ['viet69.be'],
-    resourceTypes: ['script'],
-    regex: '^https://cdn2\\.vietadx\\.net/v/v-(main|top|underplayer)-adx\\.js(?:\\?|$)',
-  },
-  {
-    // embed-vast.js waits for this supplier before it can initialize the player.
-    // Supply an empty schedule instead of blocking it and leaving playback stuck.
-    domains: ['cdn.adxcontent.com'],
-    initiatorDomains: ['vlxx.app', 'vlxx.phd', 'play.vlstream.net'],
-    resourceTypes: ['script'],
-    regex: '^https://cdn\\.adxcontent\\.com/vlxx/vl-inplayer-adx\\.js(?:\\?|$)',
-    action: { type: 'redirect', redirect: { extensionPath: '/vlxx-no-ads.js' } },
-  },
-  {
-    domains: ['cdn.adxcontent.com'],
-    initiatorDomains: ['vlxx.app', 'vlxx.phd'],
-    resourceTypes: ['script'],
-    regex: '^https://cdn\\.adxcontent\\.com/vlxx/vl-(top|underplayer|main)-adx\\.js(?:\\?|$)',
-  },
-  {
-    domains: ['cdn.adxcontent.com'],
-    initiatorDomains: ['vlxx.app', 'vlxx.phd', 'play.vlstream.net'],
-    resourceTypes: ['xmlhttprequest'],
-    regex: '^https://cdn\\.adxcontent\\.com/vlxx/tvc/[a-zA-Z0-9_-]+\\.xml(?:\\?|$)',
-  },
-  {
-    // Observed VAST endpoint on xvideos.com. Leave the content HLS CDN alone.
-    domains: ['pemsrv.com'],
-    initiatorDomains: ['xvideos.com'],
-    resourceTypes: ['xmlhttprequest'],
-    regex: '^https?://([^/]+\\.)?pemsrv\\.com/v1/vast\\.php(?:\\?|$)',
-  },
   {
     // Found in adBreakServiceRenderer.getAdBreakUrl in the user's player response.
     domains: ['youtube.com'],
@@ -127,22 +65,6 @@ export const GENERIC_SELECTORS = [
   'iframe[src*="doubleclick.net/"]',
   '[data-advertisement="true"]',
 ];
-
-export const VLXX_SELECTORS = [
-  '#vl-top-adx',
-  '#vl-header-adx',
-  '#vl-underplayer-adx',
-  '#vl-native-adx',
-  '.banner-preload',
-  '.catfish-top',
-  '.catfish-bottom',
-  '.banner-catfish-top',
-  '.banner-catfish-bottom',
-];
-
-export const VIET69_SELECTORS = [...VLXX_SELECTORS, '.app-ad'];
-
-export const VNSEXTOP_SELECTORS = ['.hiadu', '.catfish-image', '[id^="__clb-spot_"]'];
 
 export const YOUTUBE_SELECTORS = [
   'ytd-ad-slot-renderer',

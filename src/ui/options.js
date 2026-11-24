@@ -3,19 +3,22 @@ import { getSettings, notice, updateSettings } from './shared.js';
 import { getLanguage, setLanguage, t } from './i18n.js';
 
 const fields = ['enabled', 'network', 'cosmetic', 'youtubeData'];
-const sites = ['youtube', 'facebook', 'tiktok', 'xvideos', 'vlxx', 'viet69', 'vnsextop'];
+const sites = ['youtube', 'facebook', 'tiktok'];
 const byId = (id) => document.getElementById(id);
 document.querySelector('.version').textContent = chrome.runtime.getManifest().version;
 
 function populate(settings) {
   setLanguage(settings.language);
   byId('language').value = settings.language;
+  byId('player-guide').href =
+    `https://kietpt2003.github.io/content-blocking-policy/?lang=${settings.language}#${settings.language}-player-filters`;
   fields.forEach((key) => {
     byId(key).checked = settings[key];
   });
   sites.forEach((key) => {
     byId(key).checked = settings.sites[key];
   });
+  byId('playerDomains').value = settings.playerDomains.join('\n');
   byId('customDomains').value = settings.customDomains.join('\n');
   byId('disabledSites').value = settings.disabledSites.join('\n');
   byId('customCosmetic').value = settings.customCosmetic
@@ -43,6 +46,7 @@ byId('settings-form').addEventListener('submit', async (event) => {
         language: byId('language').value,
         ...Object.fromEntries(fields.map((key) => [key, byId(key).checked])),
         sites: Object.fromEntries(sites.map((key) => [key, byId(key).checked])),
+        playerDomains: parseLines(byId('playerDomains').value),
         customDomains: parseLines(byId('customDomains').value),
         disabledSites: parseLines(byId('disabledSites').value),
         customCosmetic: parseCosmetic(byId('customCosmetic').value, getLanguage()),
@@ -65,7 +69,7 @@ byId('export').addEventListener('click', async () => {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'home-content-blocker.json';
+    anchor.download = 'leaf-content-guard.json';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notice('exported');
@@ -104,8 +108,10 @@ byId('reset').addEventListener('click', async () => {
     notice(error.message, true);
   }
 });
-document.addEventListener('home-blocker:language-changed', () => {
+document.addEventListener('leaf-content-guard:language-changed', () => {
   byId('language').value = getLanguage();
+  byId('player-guide').href =
+    `https://kietpt2003.github.io/content-blocking-policy/?lang=${getLanguage()}#${getLanguage()}-player-filters`;
 });
 byId('language').addEventListener('change', async () => {
   const language = byId('language');

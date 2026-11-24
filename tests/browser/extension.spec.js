@@ -81,393 +81,58 @@ test.afterEach(async () => {
   for (const page of context.pages()) if (page !== control) await page.close();
 });
 
-test('XVideos early ad gate preserves content and restores native behavior when disabled', async () => {
-  await setSettings();
-  const html = `<html><head><script>
+test('player hook is opt-in and removal restores an already loaded player', async () => {
+  const html = `<script>
     function Player() { this.source = 'content.m3u8'; }
     window.HTML5Player = Player;
     Player.prototype = { _checkVideoAdsCommon: function() { return true; } };
     window.player = new HTML5Player();
     window.earlyAdAllowed = player._checkVideoAdsCommon('preroll');
-  </script></head><body>Player fixture</body></html>`;
-  const page = await fixture('https://www.xvideos.com/video.fixture/test', html);
+  </script>`;
+  const url = 'https://video.example.com/watch';
+  const untouched = await fixture(url, html);
+  expect(await untouched.evaluate(() => window.earlyAdAllowed)).toBe(true);
+  await untouched.close();
+  await control.reload();
+  await control
+    .locator('#playerDomains')
+    .fill('https://video.example.com/*\nhttps://*.video.example.com/*');
+  await control.locator('#save').click();
+  await expect(control.locator('#status')).toContainText('Đã lưu');
+  await expect(control.locator('#playerDomains')).toHaveValue('video.example.com');
+  const page = await fixture(url, html);
   expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
   expect(await page.evaluate(() => player.source)).toBe('content.m3u8');
-  await setSettings({ network: false });
+  await setSettings({ playerDomains: ['video.example.com'], network: false });
   await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('preroll'))).toBe(true);
-  await setSettings();
+  await setSettings({ playerDomains: ['video.example.com'] });
   await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('postroll'))).toBe(false);
-  await page.close();
-  await setSettings({ disabledSites: ['xvideos.com'] });
-  const excluded = await fixture('https://www.xvideos.com/video.fixture/excluded', html);
+  await setSettings({ playerDomains: ['video.example.com'], disabledSites: ['video.example.com'] });
+  await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('preroll'))).toBe(true);
+  const excluded = await fixture(url, html);
   expect(await excluded.evaluate(() => window.earlyAdAllowed)).toBe(true);
   await excluded.close();
   await setSettings();
-});
-
-test('XVideos switch in settings and popup controls both player and VAST requests', async () => {
-  const page = await fixture(
-    'https://www.xvideos.com/video.fixture/switch',
-    `<script>
-    window.HTML5Player = function() {};
-    HTML5Player.prototype._checkVideoAdsCommon = function() { return true; };
-    window.player = new HTML5Player();
-    window.earlyAdAllowed = player._checkVideoAdsCommon('preroll');
-  </script>`,
-  );
-  await page.route('https://s.pemsrv.com/**', (route) =>
-    route.fulfill({
-      contentType: 'text/plain',
-      headers: { 'access-control-allow-origin': '*' },
-      body: 'allowed',
-    }),
-  );
-  const fetchAd = () =>
-    page.evaluate(async () => {
-      try {
-        return await (await fetch('https://s.pemsrv.com/v1/vast.php?fixture=' + Date.now())).text();
-      } catch {
-        return 'blocked';
-      }
-    });
-  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
-  expect(await fetchAd()).toBe('blocked');
-  await control.reload();
-  await expect(control.locator('#xvideos')).toBeChecked();
-  await control.locator('#xvideos').uncheck();
-  await control.locator('#save').click();
-  await expect(control.locator('#status')).toContainText('Đã lưu');
   await expect.poll(() => page.evaluate(() => player._checkVideoAdsCommon('preroll'))).toBe(true);
-  expect(await fetchAd()).toBe('allowed');
-  await page.reload();
-  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(true);
-  await control.reload();
-  await expect(control.locator('#xvideos')).not.toBeChecked();
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-  await expect(popup.locator('#xvideos')).toBeEnabled();
-  await expect(popup.locator('#xvideos')).not.toBeChecked();
-  await popup.locator('#xvideos').check();
-  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC XVideos');
-  await page.reload();
-  expect(await page.evaluate(() => window.earlyAdAllowed)).toBe(false);
-  expect(await fetchAd()).toBe('blocked');
-  await control.reload();
-  await expect(control.locator('#xvideos')).toBeChecked();
-  expect(
-    (await control.evaluate(() => chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }))).settings
-      .sites.youtube,
-  ).toBe(true);
-});
-
-test('VLXX blocks popunder scripts and supplies an empty schedule without stalling the iframe player', async () => {
-  const supplierURL = 'https://cdn.adxcontent.com/vlxx/vl-inplayer-adx.js?v=123';
-  const vastURL = 'https://cdn.adxcontent.com/vlxx/tvc/man88.xml';
-  const page = await context.newPage();
-  await page.route('**/*', async (route) => {
-    const url = new URL(route.request().url());
-    if (url.protocol === 'chrome-extension:') return route.continue();
-    let contentType = 'text/html';
-    let body = '';
-    if (url.hostname === 'play.vlstream.net') {
-      body = `<script src="${supplierURL}"></script><script>
-        window.originalSources = [{file:'https://media.example.test/content.m3u8'}];
-        const timer = setInterval(() => {
-          if (typeof window.funcGetvastAdx !== 'function') return;
-          clearInterval(timer);
-          window.playerConfig = {sources: originalSources, schedule: funcGetvastAdx()};
-          window.fixtureReady = true;
-        }, 10);
-      </script><button id="play" onclick="window.fixturePlaying=!!window.fixtureReady">Play</button>`;
-    } else if (url.hostname === 'cdn.adxcontent.com') {
-      contentType = 'application/javascript';
-      body = url.pathname.includes('inplayer')
-        ? `window.COUNT_VAST=2;window.nativeSupplier=true;window.funcGetvastAdx=()=>[{tag:'${vastURL}'}];window.funcJWonReadyVAST=()=>{};`
-        : 'window.popunderScriptLoaded=true;';
-    } else {
-      body = `<div id="vl-top-adx">Banner</div><div class="banner-preload">Popup</div>
-        <a id="organic" href="#content">Content</a><div id="content">Original content</div>
-        <script src="https://cdn.adxcontent.com/vlxx/vl-main-adx.js"></script>
-        <iframe src="https://play.vlstream.net/embed/fixture"></iframe>`;
-    }
-    await route.fulfill({ contentType, body, headers: { 'access-control-allow-origin': '*' } });
-  });
-  for (const host of ['vlxx.app', 'vlxx.phd']) {
-    await setSettings();
-    await page.goto(`https://${host}/video/fixture`);
-    let frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
-    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
-    expect(await frame.evaluate(() => window.COUNT_VAST)).toBe(0);
-    expect(await frame.evaluate(() => window.playerConfig.schedule)).toEqual([]);
-    expect(await frame.evaluate(() => window.playerConfig.sources === window.originalSources)).toBe(
-      true,
-    );
-    await frame.locator('#play').click();
-    expect(await frame.evaluate(() => window.fixturePlaying)).toBe(true);
-    expect(await page.evaluate(() => window.popunderScriptLoaded)).toBeUndefined();
-    await expect(page.locator('#vl-top-adx')).toBeHidden();
-    await expect(page.locator('.banner-preload')).toBeHidden();
-    await expect(page.locator('#organic')).toBeVisible();
-    const fetchAd = () =>
-      frame.evaluate(async (url) => {
-        try {
-          await fetch(url);
-          return 'allowed';
-        } catch {
-          return 'blocked';
-        }
-      }, vastURL);
-    expect(await fetchAd()).toBe('blocked');
-    const popup = await context.newPage();
-    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await expect(popup.locator('#vlxx')).toBeChecked();
-    await popup.locator('#vlxx').uncheck();
-    await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VLXX');
-    await expect(page.locator('#vl-top-adx')).toBeVisible();
-    await page.reload();
-    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
-    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
-    expect(await frame.evaluate(() => window.nativeSupplier)).toBe(true);
-    expect(await frame.evaluate(() => window.playerConfig.schedule.length)).toBe(1);
-    expect(await page.evaluate(() => window.popunderScriptLoaded)).toBe(true);
-    expect(await fetchAd()).toBe('allowed');
-    await popup.locator('#vlxx').check();
-    await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VLXX');
-    await page.reload();
-    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
-    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
-    expect(await frame.evaluate(() => window.playerConfig.schedule)).toEqual([]);
-    await popup.close();
-    await setSettings({ disabledSites: [host] });
-    await page.reload();
-    frame = page.frames().find((f) => f.url().startsWith('https://play.vlstream.net/'));
-    await expect.poll(() => frame.evaluate(() => window.fixtureReady)).toBe(true);
-    expect(await frame.evaluate(() => window.nativeSupplier)).toBe(true);
-    expect(await fetchAd()).toBe('allowed');
-  }
-});
-
-test('Viet69 switch blocks click ads, restores banners and preserves its iframe player', async () => {
-  const page = await context.newPage();
-  await page.route('**/*', (route) => {
-    const url = new URL(route.request().url());
-    if (url.hostname === 'cdn2.vietadx.net') {
-      return route.fulfill({
-        contentType: 'application/javascript',
-        body: `
-        window.fixtureAdLoaded=true;
-        document.addEventListener('click',()=>window.fixtureAdClicks=(window.fixtureAdClicks||0)+1);
-      `,
-      });
-    }
-    return route.fulfill({
-      contentType: 'text/html',
-      body:
-        url.hostname === 'emb.cd-vs.com'
-          ? '<button id="play" onclick="window.fixturePlaying=true">Play</button>'
-          : `<div id="vl-top-adx">Banner</div><div id="vl-underplayer-adx">Banner</div>
-        <div class="catfish-bottom">Floating banner</div><div class="banner-preload">Popup</div>
-        <button id="content">Content action</button>
-        <script src="https://cdn2.vietadx.net/v/v-main-adx.js?v=123"></script>
-        <iframe src="https://emb.cd-vs.com/embed/fixture"></iframe>`,
-    });
-  });
-  await page.goto('https://viet69.be/fixture/');
-  await page.locator('#content').click();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
-  expect(await page.evaluate(() => window.fixtureAdClicks)).toBeUndefined();
-  for (const selector of [
-    '#vl-top-adx',
-    '#vl-underplayer-adx',
-    '.catfish-bottom',
-    '.banner-preload',
-  ]) {
-    await expect(page.locator(selector)).toBeHidden();
-  }
-  await page.frameLocator('iframe').locator('#play').click();
-  await expect
-    .poll(() =>
-      page
-        .frameLocator('iframe')
-        .locator('#play')
-        .evaluate(() => window.fixturePlaying),
-    )
-    .toBe(true);
-  await control.reload();
-  await expect(control.locator('#viet69')).toBeChecked();
-  await control.locator('#viet69').uncheck();
-  await control.locator('#save').click();
-  await expect(control.locator('#status')).toContainText('Đã lưu');
-  await expect(page.locator('#vl-top-adx')).toBeVisible();
-  await page.reload();
-  await page.locator('#content').click();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  expect(await page.evaluate(() => window.fixtureAdClicks)).toBe(1);
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-  await expect(popup.locator('#viet69')).not.toBeChecked();
-  await popup.locator('#viet69').check();
-  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC Viet69');
-  await page.reload();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
-  await expect(page.locator('#vl-top-adx')).toBeHidden();
-  await setSettings({ disabledSites: ['viet69.be'] });
-  await page.reload();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  await expect(page.locator('#vl-top-adx')).toBeVisible();
-  await setSettings();
-  await page.goto('https://news.example.com/fixture/');
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  await expect(page.locator('#vl-top-adx')).toBeVisible();
-});
-
-test('Viet69 hides the live related-before banner and recycled slots without hiding content', async () => {
-  const page = await fixture(
-    'https://viet69.be/fixture/banner',
-    `
-    <div id="player"><video></video></div>
-    <div class="app-ad app-ad--related-before" id="remaining-ad">
-      <div id="__clb-spot_1926112_qts_1"><iframe id="__clb-spot_1926112_qts_1_container"></iframe></div>
-    </div>
-    <div class="app-advertisement-guide" id="content">Content</div>`,
-  );
-  await expect(page.locator('#remaining-ad')).toBeHidden();
-  await expect(page.locator('#player')).toBeVisible();
-  await expect(page.locator('#content')).toBeVisible();
-  await page.route('https://vertigovitalitywieldable.com/**', (route) =>
-    route.fulfill({
-      contentType: 'text/plain',
-      body: 'allowed',
-      headers: { 'access-control-allow-origin': '*' },
-    }),
-  );
-  const fetchAd = () =>
-    page.evaluate(async () => {
-      try {
-        return await (await fetch('https://vertigovitalitywieldable.com/bn.js')).text();
-      } catch {
-        return 'blocked';
-      }
-    });
-  expect(await fetchAd()).toBe('blocked');
-  await page.evaluate(() => {
-    const ad = document.createElement('div');
-    ad.className = 'app-ad app-ad--related-before';
-    ad.id = 'late-ad';
-    ad.textContent = 'Late banner';
-    document.body.append(ad);
-  });
-  await expect(page.locator('#late-ad')).toBeHidden();
-  await setSettings({ sites: { ...DEFAULTS.sites, viet69: false } });
-  await expect(page.locator('#remaining-ad')).toBeVisible();
-  await expect(page.locator('#late-ad')).toBeVisible();
-  expect(await fetchAd()).toBe('allowed');
-  await setSettings();
-  await expect(page.locator('#remaining-ad')).toBeHidden();
-  await page.evaluate(() => (document.querySelector('#late-ad').className = 'ordinary'));
-  await expect(page.locator('#late-ad')).toBeVisible();
-  await page.goto('https://vlxx.app/fixture/banner');
-  await expect(page.locator('#remaining-ad')).toBeVisible();
-});
-
-test('VNSexTop switch blocks ad loaders and floating banners while preserving its wrapper and iframe', async () => {
-  const page = await context.newPage();
-  await page.route('**/*', (route) => {
-    const url = new URL(route.request().url());
-    if (
-      [
-        'driverhugoverblown.com',
-        'astronautlividlyreformer.com',
-        'earmuffpostnasalrisotto.com',
-        'thickteaching.com',
-      ].includes(url.hostname)
-    ) {
-      return route.fulfill({
-        contentType: 'application/javascript',
-        headers: { 'access-control-allow-origin': '*' },
-        body: 'window.fixtureAdLoaded=true;',
-      });
-    }
-    return route.fulfill({
-      contentType: 'text/html',
-      body:
-        url.hostname === 'b.dfplayer.cc'
-          ? `<button id="play" onclick="this.dataset.playing='true'">Play</button>`
-          : `<div id="wrapper"><header id="header">Header</header><main id="content">Content
-        <div class="hiadu">Top banner</div>
-        <iframe id="player-frame" src="https://b.dfplayer.cc/bf.html?did=2256"></iframe>
-        <div class="catfish-image"><div id="__clb-spot_2075239_rdn_2"><iframe></iframe></div></div>
-        </main></div><script src="https://driverhugoverblown.com/on.js"></script>`,
-    });
-  });
-  await page.goto('https://vnsextop1.pro/fixture/');
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
-  for (const selector of ['.hiadu', '.catfish-image', '[id^="__clb-spot_"]'])
-    await expect(page.locator(selector)).toBeHidden();
-  await expect(page.locator('#wrapper')).toBeVisible();
-  await expect(page.locator('#header')).toBeVisible();
-  const play = page.frameLocator('#player-frame').locator('#play');
-  await play.click();
-  await expect(play).toHaveAttribute('data-playing', 'true');
-  const fetchAd = (host) =>
-    page.evaluate(async (host) => {
-      try {
-        await fetch(`https://${host}/on.js`);
-        return 'allowed';
-      } catch {
-        return 'blocked';
-      }
-    }, host);
-  for (const host of [
-    'driverhugoverblown.com',
-    'astronautlividlyreformer.com',
-    'earmuffpostnasalrisotto.com',
-    'thickteaching.com',
-  ])
-    expect(await fetchAd(host)).toBe('blocked');
-  await control.reload();
-  await expect(control.locator('#vnsextop')).toBeChecked();
-  await control.locator('#vnsextop').uncheck();
-  await control.locator('#save').click();
-  await expect(control.locator('#status')).toContainText('Đã lưu');
-  await expect(page.locator('.hiadu')).toBeVisible();
-  await expect(page.locator('.catfish-image')).toBeVisible();
-  await page.reload();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  expect(await fetchAd('earmuffpostnasalrisotto.com')).toBe('allowed');
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-  await expect(popup.locator('#vnsextop')).not.toBeChecked();
-  await popup.locator('#vnsextop').check();
-  await expect(popup.locator('#status')).toContainText('Đã cập nhật chặn QC VNSexTop');
-  await page.reload();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBeUndefined();
-  await expect(page.locator('.catfish-image')).toBeHidden();
-  await setSettings({ disabledSites: ['vnsextop1.pro'] });
-  await page.reload();
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  await expect(page.locator('.catfish-image')).toBeVisible();
-  await setSettings();
-  await page.goto('https://news.example.com/fixture/');
-  expect(await page.evaluate(() => window.fixtureAdLoaded)).toBe(true);
-  await expect(page.locator('.catfish-image')).toBeVisible();
+  const fresh = await fixture(url, html);
+  expect(await fresh.evaluate(() => window.earlyAdAllowed)).toBe(true);
 });
 
 test('English and Chinese apply across options and popup, persist, and preserve unsaved filtering fields', async () => {
   await control.reload();
   await expect(control.locator('#language')).toHaveValue('vi');
   await control.locator('#customDomains').fill('ads.example.com');
-  await control.locator('#xvideos').uncheck();
+  await control.locator('#youtube').uncheck();
   await control.locator('#language').selectOption('en');
   await expect(control.locator('#status')).toHaveText('Language saved.');
   await expect(control.locator('html')).toHaveAttribute('lang', 'en');
   await expect(control.locator('#save')).toHaveText('Save settings');
   await expect(control.locator('#customDomains')).toHaveValue('ads.example.com');
-  await expect(control.locator('#xvideos')).not.toBeChecked();
+  await expect(control.locator('#youtube')).not.toBeChecked();
   const stored = await control.evaluate(() => chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }));
   expect(stored.settings.language).toBe('en');
   expect(stored.settings.customDomains).toEqual([]);
-  expect(stored.settings.sites.xvideos).toBe(true);
+  expect(stored.settings.sites.youtube).toBe(true);
   const page = await fixture('https://www.youtube.com/watch?v=languages', '<p>YouTube</p>');
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -476,10 +141,10 @@ test('English and Chinese apply across options and popup, persist, and preserve 
   await expect(popup.locator('html')).toHaveAttribute('lang', 'en');
   await expect(popup.locator('#options')).toHaveText('Open settings & rules');
   await expect(popup.locator('#network-state')).toContainText('Network blocking: on');
-  await popup.locator('#xvideos').uncheck();
-  await expect(popup.locator('#status')).toHaveText(
-    'XVideos ad blocking updated. Reload the video to apply all changes.',
-  );
+  await popup.locator('#enabled').uncheck();
+  await expect(popup.locator('#status')).toHaveText('Updated.');
+  await popup.locator('#enabled').check();
+  await expect(popup.locator('#network-state')).toContainText('Network blocking: on');
   await control.locator('#customDomains').fill('https://invalid.test');
   await control.locator('#save').click();
   await expect(control.locator('#status')).toContainText('Invalid domain: https://invalid.test');
@@ -501,7 +166,7 @@ test('English and Chinese apply across options and popup, persist, and preserve 
   await control.reload();
   await expect(control.locator('#language')).toHaveValue('zh-CN');
   await expect(control.locator('#customDomains')).toHaveValue('ads.example.com');
-  await expect(control.locator('#xvideos')).not.toBeChecked();
+  await expect(control.locator('#youtube')).not.toBeChecked();
   await control.setViewportSize({ width: 375, height: 812 });
   expect(await control.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
     true,
@@ -980,7 +645,7 @@ test('options reject malformed selectors and import/export remain local', async 
   await expect(control.locator('#status')).toContainText('Đã lưu');
   const download = control.waitForEvent('download');
   await control.getByRole('button', { name: 'Xuất JSON' }).click();
-  expect((await download).suggestedFilename()).toBe('home-content-blocker.json');
+  expect((await download).suggestedFilename()).toBe('leaf-content-guard.json');
   await mkdir('artifacts', { recursive: true });
   await control.screenshot({
     path: 'artifacts/options.png',

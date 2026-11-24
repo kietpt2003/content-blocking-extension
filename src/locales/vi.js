@@ -1,13 +1,13 @@
 export default {
   extension_name: {
-    message: 'Home Content Blocker',
+    message: 'Leaf Content Guard',
   },
   extension_description: {
     message:
       'Chặn domain quảng cáo và lọc thành phần HTML trên YouTube, Facebook, TikTok và website khác.',
   },
   options_title: {
-    message: 'Cài đặt · Home Content Blocker',
+    message: 'Cài đặt · Leaf Content Guard',
   },
   options_tagline: {
     message: 'Quy tắc của bạn. Lưu trên trình duyệt của bạn.',
@@ -48,33 +48,6 @@ export default {
   website_title: {
     message: 'Quy tắc theo nền tảng',
   },
-  xvideos_label: {
-    message: 'Chặn QC XVideos',
-  },
-  vlxx_label: {
-    message: 'Chặn QC VLXX',
-  },
-  viet69_label: {
-    message: 'Chặn QC Viet69',
-  },
-  vnsextop_label: {
-    message: 'Chặn QC VNSexTop',
-  },
-  xvideos_hint: {
-    message: 'Bỏ quảng cáo trước và sau clip. Cần bật Chặn domain / URL; tải lại clip sau khi đổi.',
-  },
-  vlxx_hint: {
-    message:
-      'Áp dụng cho vlxx.app và vlxx.phd. Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại clip sau khi đổi.',
-  },
-  viet69_hint: {
-    message:
-      'Áp dụng cho viet69.be. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.',
-  },
-  vnsextop_hint: {
-    message:
-      'vnsextop1.pro. Chặn banner và tab quảng cáo khi bấm. Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.',
-  },
   youtube_data_label: {
     message: 'Thử nghiệm: JSON YouTube',
   },
@@ -92,6 +65,16 @@ export default {
   custom_title: {
     message: 'Domain & HTML',
   },
+  error_player_domain: {
+    message:
+      'Mẫu player không hợp lệ: {value}. Dùng domain hoặc mẫu https://*.example.com/*; không dùng đường dẫn riêng, port hoặc query.',
+  },
+  player_domains_label: { message: 'Domain can thiệp player' },
+  player_domains_hint: {
+    message:
+      'Mặc định trống. Nhập domain hoặc mẫu HTTPS, ví dụ video.example.com, https://video.example.com/* hoặc https://*.video.example.com/*. Các dạng này đều áp dụng toàn domain và subdomain. Cần bật Chặn domain / URL; lưu rồi tải lại trang. Chỉ hỗ trợ player có API tương thích.',
+  },
+  player_domains_guide: { message: 'Danh sách tham khảo và giới hạn player' },
   custom_domains_label: {
     message: 'Domain bổ sung cần chặn',
   },
@@ -136,19 +119,6 @@ export default {
   },
   popup_enabled_hint: {
     message: 'Domain và nội dung trang',
-  },
-  popup_xvideos_hint: {
-    message: 'Tải lại clip sau khi đổi; cần bật Chặn domain / URL trong cài đặt.',
-  },
-  popup_vlxx_hint: {
-    message:
-      'vlxx.app / vlxx.phd. Tải lại clip sau khi đổi; cần bật chặn URL và ẩn HTML trong cài đặt.',
-  },
-  popup_viet69_hint: {
-    message: 'viet69.be. Tải lại trang sau khi đổi; cần bật chặn URL và ẩn HTML trong cài đặt.',
-  },
-  popup_vnsextop_hint: {
-    message: 'vnsextop1.pro. Tải lại trang sau khi đổi; cần bật chặn URL và ẩn HTML trong cài đặt.',
   },
   popup_current: {
     message: 'TRANG HIỆN TẠI',
@@ -301,7 +271,7 @@ export default {
     message: 'Cấu hình chứa trường không được hỗ trợ.',
   },
   error_schema: {
-    message: 'schemaVersion phải là 1.',
+    message: 'Chỉ hỗ trợ schemaVersion 1 hoặc 2.',
   },
   error_boolean: {
     message: '{field} phải là boolean.',

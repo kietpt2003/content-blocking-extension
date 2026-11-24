@@ -19,11 +19,19 @@ export function normalizeDomain(value, language = 'vi') {
   return domain;
 }
 
-function domainList(value, name, language) {
+export function normalizePlayerDomain(value, language = 'vi') {
+  if (typeof value !== 'string') throw new Error(translate(language, 'error_domain_type'));
+  // Only whole-site HTTPS patterns are supported. Do not silently widen path-specific rules.
+  const match = /^(?:https:\/\/)?(?:\*\.)?([^/*?#:@\s]+)(?:\/(?:\*)?)?$/i.exec(value.trim());
+  if (!match) throw new Error(translate(language, 'error_player_domain', { value }));
+  return normalizeDomain(match[1], language);
+}
+
+function domainList(value, name, language, normalize = normalizeDomain) {
   if (!Array.isArray(value) || value.length > 250) {
     throw new Error(translate(language, 'error_domain_limit', { name: translate(language, name) }));
   }
-  return [...new Set(value.map((domain) => normalizeDomain(domain, language)))].sort();
+  return [...new Set(value.map((domain) => normalize(domain, language)))].sort();
 }
 
 export function validateSettings(input, language = input?.language ?? 'vi') {
@@ -35,7 +43,9 @@ export function validateSettings(input, language = input?.language ?? 'vi') {
     throw new Error(t('error_settings_unknown'));
   }
   const merged = { ...structuredClone(DEFAULTS), ...input };
-  if (merged.schemaVersion !== 1) throw new Error(t('error_schema'));
+  const upgrading = merged.schemaVersion === 1;
+  if (!upgrading && merged.schemaVersion !== DEFAULTS.schemaVersion)
+    throw new Error(t('error_schema'));
   if (!LANGUAGES.includes(merged.language)) throw new Error(t('error_language'));
   for (const field of ['enabled', 'network', 'cosmetic', 'youtubeData']) {
     if (typeof merged[field] !== 'boolean') throw new Error(t('error_boolean', { field }));
@@ -43,14 +53,22 @@ export function validateSettings(input, language = input?.language ?? 'vi') {
   if (!merged.sites || typeof merged.sites !== 'object' || Array.isArray(merged.sites)) {
     throw new Error(t('error_sites'));
   }
-  if (Object.keys(merged.sites).some((key) => !Object.hasOwn(SITE_DOMAINS, key))) {
-    throw new Error(t('error_site_unknown'));
-  }
-  merged.sites = { ...DEFAULTS.sites, ...merged.sites };
-  if (Object.values(merged.sites).some((value) => typeof value !== 'boolean')) {
+  if (Object.values(merged.sites).some((value) => typeof value !== 'boolean'))
     throw new Error(t('error_site_boolean'));
-  }
+  const knownSites = Object.fromEntries(
+    Object.entries(merged.sites).filter(([site]) => Object.hasOwn(SITE_DOMAINS, site)),
+  );
+  if (!upgrading && Object.keys(knownSites).length !== Object.keys(merged.sites).length)
+    throw new Error(t('error_site_unknown'));
+  merged.sites = { ...DEFAULTS.sites, ...knownSites };
+  merged.schemaVersion = DEFAULTS.schemaVersion;
   merged.disabledSites = domainList(merged.disabledSites, 'domain_list_excluded', language);
+  merged.playerDomains = domainList(
+    merged.playerDomains,
+    'player_domains_label',
+    language,
+    normalizePlayerDomain,
+  );
   merged.customDomains = domainList(merged.customDomains, 'domain_list_custom', language);
   if (!Array.isArray(merged.customCosmetic) || merged.customCosmetic.length > 100) {
     throw new Error(t('error_cosmetic_limit'));

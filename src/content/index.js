@@ -22,7 +22,7 @@ let settings = structuredClone(DEFAULTS);
 let settingsLoaded = false;
 let youtubeDiagnostics = null;
 
-document.addEventListener('home-blocker:diagnostics', (event) => {
+document.addEventListener('leaf-content-guard:diagnostics', (event) => {
   try {
     const value = JSON.parse(event.detail);
     if (typeof value.version !== 'string' || value.version.length > 30) return;
@@ -52,15 +52,18 @@ function sendPageState() {
   // The registered MAIN script already has the correct startup policy. Do not
   // overwrite it with DEFAULTS while the real storage response is pending.
   if (!settingsLoaded) return;
-  if (domainMatches(host, 'xvideos.com')) {
-    document.dispatchEvent(
-      new CustomEvent('home-blocker:xvideos-settings', {
-        detail: JSON.stringify({ enabled: filteringEnabled(settings, host) && settings.network }),
-      }),
-    );
-  }
   document.dispatchEvent(
-    new CustomEvent('home-blocker:settings', {
+    new CustomEvent('leaf-content-guard:player-settings', {
+      detail: JSON.stringify({
+        enabled:
+          settings.playerDomains.some((domain) => domainMatches(host, domain)) &&
+          filteringEnabled(settings, host) &&
+          settings.network,
+      }),
+    }),
+  );
+  document.dispatchEvent(
+    new CustomEvent('leaf-content-guard:settings', {
       detail: JSON.stringify({
         youtubeData: filteringEnabled(settings, host) && settings.youtubeData,
       }),
@@ -80,14 +83,14 @@ function apply(value) {
   sendPageState();
 }
 
-document.addEventListener('home-blocker:ready', sendPageState);
-document.addEventListener('home-blocker:xvideos-ready', sendPageState);
+document.addEventListener('leaf-content-guard:ready', sendPageState);
+document.addEventListener('leaf-content-guard:player-ready', sendPageState);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? DEFAULTS);
 });
 chrome.runtime.onMessage.addListener((message, _sender, respond) => {
   if (message?.type === 'GET_PAGE_STATUS') {
-    document.dispatchEvent(new CustomEvent('home-blocker:diagnostics-request'));
+    document.dispatchEvent(new CustomEvent('leaf-content-guard:diagnostics-request'));
     respond({
       host,
       version: chrome.runtime.getManifest().version,
