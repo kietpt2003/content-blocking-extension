@@ -1,0 +1,38 @@
+{
+  "vi": {
+    "label": "Tiếng Việt",
+    "storeLocale": "vi",
+    "description": [
+      "Leaf Content Guard giúp bạn chặn các yêu cầu tải quảng cáo và theo dõi đã nhận diện, đồng thời ẩn thành phần quảng cáo trên website ngay trong Chrome.",
+      "TÙY CHỈNH CÁCH LỌC\n• Bật hoặc tắt toàn bộ bộ lọc, chặn domain/URL và ẩn thành phần trang.\n• Bật hoặc tắt quy tắc riêng cho YouTube, Facebook và TikTok. Facebook/TikTok chỉ ẩn bài có dấu hiệu quảng cáo được nhận diện.\n• Thêm domain cần chặn, quy tắc HTML dạng domain##CSS-selector và danh sách website được bỏ qua. Ngoại lệ website được ưu tiên hơn domain chặn.\n• Nhập hoặc xuất cấu hình JSON để tự sao lưu và khôi phục.\n• Chọn giao diện tiếng Việt, tiếng Anh hoặc tiếng Trung giản thể.",
+      "LỌC QUẢNG CÁO TRONG PLAYER\nDanh sách domain mặc định trống. Bạn có thể nhập domain hoặc mẫu HTTPS để áp dụng bộ lọc player trên các trang và subdomain tương ứng. Tính năng hỗ trợ bỏ bước kiểm tra quảng cáo trước/sau video trên player tương thích, không hỗ trợ mọi loại player và không bảo đảm loại bỏ tất cả quảng cáo. Cài đặt có liên kết hướng dẫn cấu hình và giới hạn hỗ trợ. Danh sách tham khảo không được tự động tải hoặc áp dụng. Cần bật bộ lọc và Chặn domain / URL; ngoại lệ website vẫn được ưu tiên. Lưu cấu hình rồi tải lại trang.",
+      "DỮ LIỆU TRÊN TRÌNH DUYỆT CỦA BẠN\nCấu hình được lưu cục bộ. Extension đọc và xử lý nội dung trang để áp dụng bộ lọc, nhưng không tự gửi nội dung trang, cấu hình hay bản ghi chẩn đoán lên máy chủ. Chẩn đoán mạng YouTube chỉ ghi khi bạn chủ động bật, tối đa 60 giây, giữ tối đa 200 mục metadata yêu cầu đã rút gọn trong bộ nhớ phiên trình duyệt. Bạn có thể dừng, xóa hoặc chủ động sao chép dữ liệu chẩn đoán.",
+      "LƯU Ý KHI SỬ DỤNG\nBộ lọc phụ thuộc cấu trúc website và không bảo đảm loại bỏ mọi quảng cáo, kể cả quảng cáo trong video. Lọc dữ liệu JSON YouTube là tính năng thử nghiệm, có thể tắt riêng nếu phát video gặp lỗi. Có thể cần tải lại trang sau khi đổi cấu hình. Domain tùy chỉnh chặn yêu cầu tài nguyên, không chặn điều hướng trang chính. Quy tắc HTML chỉ hỗ trợ cú pháp domain##CSS-selector, không phải toàn bộ cú pháp EasyList.",
+      "Extension chỉ lọc trong trình duyệt Chrome nơi được cài đặt. Đây là công cụ độc lập, không phải sản phẩm chính thức hay được bảo trợ bởi các website được hỗ trợ."
+    ]
+  },
+  "en": {
+    "label": "English",
+    "storeLocale": "en",
+    "description": [
+      "Leaf Content Guard helps you block recognized advertising and tracking requests and hide advertising elements on websites directly in Chrome.",
+      "CUSTOMIZE YOUR FILTERS\n• Switch all filtering, domain/URL blocking and page element hiding on or off.\n• Control rules for YouTube, Facebook and TikTok separately. Facebook/TikTok filtering only hides posts with recognized advertising markers.\n• Add blocked domains, HTML rules in domain##CSS-selector format and website exclusions. Website exclusions take priority over blocked domains.\n• Import or export JSON settings to back up and restore your configuration.\n• Choose a Vietnamese, English or Simplified Chinese interface.",
+      "IN-PLAYER AD FILTERING\nThe domain list is empty by default. Enter domains or HTTPS patterns to apply player filtering on matching pages and subdomains. The feature supports skipping pre/post-roll ad checks on compatible players; it does not support every player or guarantee removal of every advertisement. Settings include a link to configuration guidance and support limitations. Reference lists are not automatically downloaded or applied. Filtering and domain / URL blocking must be enabled; website exclusions take priority. Save settings and reload the page.",
+      "DATA IN YOUR BROWSER\nSettings are stored locally. The extension reads and processes page content to apply filters, but does not automatically upload page content, settings or diagnostic logs to a server. YouTube network diagnostics record only when you start them, for up to 60 seconds, keeping at most 200 sanitized request-metadata entries in browser session storage. You can stop, clear or explicitly copy diagnostic data.",
+      "USAGE NOTES\nFilters depend on website structure and do not guarantee removal of every advertisement, including in-video ads. YouTube JSON filtering is experimental and can be disabled separately if playback fails. Reloading may be required after changing settings. Custom domains block resource requests, not main page navigation. HTML rules support only domain##CSS-selector syntax, not the full EasyList format.",
+      "The extension filters only within the Chrome browser where it is installed. It is an independent tool, not an official product of, or endorsed by, the supported websites."
+    ]
+  },
+  "zh-CN": {
+    "label": "简体中文",
+    "storeLocale": "zh_CN",
+    "description": [
+      "Leaf Content Guard 帮助你直接在 Chrome 中拦截已识别的广告和跟踪请求，并隐藏网站上的广告元素。",
+      "自定义过滤方式\n• 开启或关闭整体过滤、域名/URL 拦截和页面元素隐藏功能。\n• 分别控制 YouTube、Facebook 和 TikTok 的过滤规则。Facebook/TikTok 过滤仅隐藏带有已识别广告标记的帖子。\n• 添加要拦截的域名、domain##CSS-selector 格式的 HTML 规则，以及不进行过滤的网站。网站排除规则优先于域名拦截规则。\n• 导入或导出 JSON 设置，自行备份和恢复配置。\n• 可选择越南语、英语或简体中文界面。",
+      "播放器内广告过滤\n域名列表默认为空。输入域名或 HTTPS 模式后，可在匹配页面及子域名上应用播放器过滤。此功能支持跳过兼容播放器的视频前后广告检查，不适用于所有播放器，也不保证移除全部广告。设置中提供配置指南和支持限制的链接。参考列表不会自动下载或应用。需要开启过滤及域名 / URL 拦截，网站排除规则优先。保存设置后请重新加载页面。",
+      "数据保存在你的浏览器中\n设置保存在本地。扩展程序会读取并处理页面内容以应用过滤规则，但不会自动向服务器上传页面内容、设置或诊断记录。YouTube 网络诊断仅在你主动启动后记录，最长 60 秒，在浏览器会话存储中保留最多 200 条经过精简的请求元数据。你可以停止、清除或主动复制诊断数据。",
+      "使用说明\n过滤效果依赖网站结构，无法保证移除所有广告，包括视频内广告。YouTube JSON 过滤是实验性功能，如果播放出现问题，可单独关闭。更改设置后可能需要重新加载页面。自定义域名规则拦截资源请求，不拦截主页面导航。HTML 规则仅支持 domain##CSS-selector 语法，不支持完整的 EasyList 格式。",
+      "扩展程序仅在安装它的 Chrome 浏览器内进行过滤。这是一款独立工具，并非所支持网站的官方产品，也未获得这些网站的背书。"
+    ]
+  }
+}
