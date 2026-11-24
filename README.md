@@ -1,4 +1,12 @@
-# Home Content Blocker — Chrome Extension
+# Leaf Content Guard — 0.0.1
+
+Đổi tên từ Home Content Blocker và khởi tạo version 0.0.1 cho gói riêng. Logic hiện tại giữ theo bản khôi phục 0.1.17. Build: `npm run package`; ZIP: `artifacts/leaf-content-guard-0.0.1.zip`.
+
+Các mục version và kết quả kiểm thử bên dưới là lịch sử của mã nguồn trước khi đổi tên. Bản ZIP 0.1.21 và snapshot trước đổi tên được giữ trong artifacts/archive. Chưa tải lên hoặc tạo listing trên Chrome Web Store.
+
+---
+
+# Leaf Content Guard — Chrome Extension
 
 Project Node.js độc lập để build Chrome Extension Manifest V3, lọc request quảng cáo
 và nội dung HTML trên trình duyệt. Không phải DNS server, không cần proxy/CA và không
@@ -49,42 +57,6 @@ ngôn ngữ Chrome; lựa chọn trong cài đặt điều khiển giao diện e
   khối lân cận. Đây là lọc HTML, cần bật Ẩn thành phần HTML và Facebook; không chặn
   rộng fbcdn.net. Không tìm chữ "Sponsored" trên toàn bộ nội dung bài viết.
 - **TikTok:** nhận diện thẻ feed có metadata sponsored/ad-label.
-- **XVideos (`xvideos.com`):** công tắc **Chặn QC XVideos** có ở popup và trang cài đặt,
-  mặc định bật; cấu hình cũ tự bổ sung công tắc mà không đổi lựa chọn website khác.
-  Khi bật công tắc và lọc Network, hook MAIN tại `document_start`
-  chặn nhánh kiểm tra pre-roll/post-roll của HTML5Player, giữ nguồn HLS và player gốc.
-  Có quy tắc dự phòng giới hạn request `/v1/vast.php` của `pemsrv.com` do trang này
-  khởi tạo. Tắt công tắc XVideos, Network/bộ lọc hoặc thêm ngoại lệ domain để dừng xử lý.
-  Tải lại clip sau khi đổi công tắc để áp dụng đầy đủ.
-  Không phụ thuộc bộ đếm clip chẵn/lẻ. Cần tải lại trang sau khi nạp bản extension mới;
-  dùng cửa sổ ẩn danh cần bật **Allow in Incognito** trong trang Details của extension.
-- **VLXX (`vlxx.app`, `vlxx.phd`):** công tắc **Chặn QC VLXX** ở popup và trang cài đặt,
-  mặc định bật. Chặn các script banner/popunder đã nhận diện và các VAST tag trong
-  `/vlxx/tvc/`; thay riêng script cung cấp lịch quảng cáo bằng lịch rỗng để JW Player
-  vẫn khởi tạo với nguồn clip gốc trong iframe `play.vlstream.net`. Không chặn thư viện
-  JW Player hoặc script khởi tạo `embed-vast.js` dùng chung với nội dung.
-  Cần bật Chặn domain / URL cho phần player/popup và Ẩn thành phần HTML cho các
-  vị trí banner. Tải lại clip sau khi đổi công tắc. Ngoại lệ website vẫn được ưu tiên.
-  `vlxx.phd` hiện chuyển hướng sang `vlxx.app`; bộ lọc nhận diện cả hai tên miền.
-- **Viet69 (`viet69.be`):** công tắc **Chặn QC Viet69** ở popup và trang cài đặt,
-  mặc định bật. Chặn ba script quảng cáo đã quan sát trên `cdn2.vietadx.net/v/`
-  (`v-main-adx.js`, `v-top-adx.js`, `v-underplayer-adx.js`) để ngăn banner và
-  popunder/click hijack; ẩn các vùng banner theo DOM đã nhận diện.
-  Chặn thêm nguồn banner `vertigovitalitywieldable.com` theo initiator Viet69
-  và các slot `.app-ad`, gồm banner iframe phía dưới video/trước nội dung liên quan.
-  Giữ API `get.video.php`, thư viện/site assets và iframe `emb.cd-vs.com`.
-  Cần bật Chặn domain / URL và Ẩn thành phần HTML; tải lại trang sau khi đổi.
-  Chưa xác nhận phát clip thật trong môi trường kiểm tra do player đang gặp lỗi
-  JavaScript cả khi chưa dùng bộ lọc; không coi iframe fixture là bằng chứng phát video thật.
-- **VNSexTop (`vnsextop1.pro`):** công tắc **Chặn QC VNSexTop** ở popup/options,
-  mặc định bật. Chặn các nguồn loader/popunder/banner đã quan sát trên
-  `driverhugoverblown.com`, `astronautlividlyreformer.com`,
-  `earmuffpostnasalrisotto.com` và `thickteaching.com`, chỉ khi do website này khởi tạo.
-  Ẩn các slot iframe, banner đầu trang và banner nổi đã nhận diện; giữ nội dung,
-  wrapper, thư viện DPlayer/HLS và iframe `b.dfplayer.cc`.
-  Cần bật chặn URL và ẩn HTML, tải lại trang sau khi đổi công tắc.
-  Chưa xác nhận quảng cáo trong video vì iframe provider bị chặn phản hồi trong
-  phiên thử, kể cả mẫu chưa dùng extension.
 - **Website khác:** domain quảng cáo chung, ad slot phổ biến và CSS selector do bạn thêm.
 
 Đây là bộ quy tắc khởi đầu có thể mở rộng, **không phải bản sao uBlock Origin** và
@@ -97,7 +69,7 @@ và A/B test liên tục. Extension chưa được xác nhận hiệu quả trê
 Yêu cầu Node.js 20 trở lên, npm và Chrome desktop 120 trở lên.
 
 ```bash
-cd /path/to/content-blocking-extension
+cd /path/to/leaf-content-guard
 npm ci
 npm run build
 ```
@@ -336,7 +308,7 @@ Các quy tắc trang động cần duy trì thêm fixture khi phát hiện DOM/A
 npm run package
 ```
 
-Tạo `artifacts/content-blocking-extension-<version>.zip` và `SHA256SUMS`.
+Tạo `artifacts/leaf-content-guard-<version>.zip` và `SHA256SUMS`.
 ZIP đặt `manifest.json` ngay ở thư mục gốc để upload Chrome Web Store. Để thử cục bộ,
 giải nén vào một thư mục riêng rồi Load unpacked thư mục đó. ZIP không phải CRX đã ký và chưa
 được phát hành lên Chrome Web Store. Script đóng gói yêu cầu lệnh `zip` (macOS/Linux).
@@ -347,3 +319,32 @@ giải nén vào một thư mục riêng rồi Load unpacked thư mục đó. ZI
 - [Content scripts / isolated world](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts)
 - [Chrome MAIN world](https://developer.chrome.com/docs/extensions/reference/manifest/content-scripts)
 - [Playwright extension testing](https://playwright.dev/docs/chrome-extensions)
+
+## Nội dung gửi duyệt Chrome Web Store
+
+Chạy `npm run webstore:assets` để tạo mô tả và ảnh chụp tiếng Việt, tiếng Anh, tiếng Trung giản thể cùng bộ ảnh quảng bá dùng chung. Kết quả: `artifacts/webstore-images.zip`. Xem [hướng dẫn điền từng ngôn ngữ](docs/store-listing/README.md) và [các mục gửi duyệt](RELEASE_REVIEW.md).
+
+
+## Player domains — 0.1.17
+
+Settings → Player intervention domains accepts one domain or whole-site HTTPS pattern per line, such as video.example.com, https://video.example.com/* or https://*.video.example.com/*. All forms normalize to the domain and cover HTTPS pages and subdomains; path-specific patterns are rejected. The default list is empty. Only the existing YouTube MAIN script is registered by default. Saving player domains registers `player-main.js` at document_start in MAIN world. This bundled hook supports `HTML5Player.prototype._checkVideoAdsCommon`; it is adapted from the previous XVideos hook, not a universal HTML5 video blocker. Unsupported APIs remain untouched.
+
+Global filtering, network filtering and website exclusions still apply. Removing a domain disables its hook on loaded pages; reload pages after configuration changes. There is no dedicated per-site player toggle. Custom blocked request domains and CSS rules remain separate settings.
+
+No domain recommendations or executable scripts are downloaded automatically. The linked guide contains reference adult-site domains and explicitly distinguishes the retained HTML5Player hook from integrations removed from this build. This change does not establish Chrome Web Store compliance or approval.
+
+## Archive
+
+`archive/0.1.15/` preserves the pre-refactor working source, tests, build scripts and listing material, including existing uncommitted listing work. Active build entry points do not import or copy it. VLXX/Viet69/VNSexTop-specific rules and the VLXX replacement script exist only in that archive. Old site switches migrate out of saved settings; no player domain is enabled automatically.
+
+## Build and validation
+
+- `npm test`: active unit tests.
+- `npm run test:browser`: Chromium fixture tests; not live-site proof.
+- `npm run check`: formatting.
+- `npm run package`: creates `artifacts/leaf-content-guard-0.1.17.zip` from dist only.
+- `npm run webstore:assets`: localized screenshots and listing text in `artifacts/webstore-images.zip`.
+
+The three supported locales must describe the same behavior. See `RELEASE_REVIEW.md` for submission notes.
+
+Settings schema 2 migrates schema 1 using the current site registry rather than hardcoded retired site names. Script cleanup removes unknown registrations using the current active IDs. Archive and documentation retain historical references.

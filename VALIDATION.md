@@ -232,7 +232,7 @@ Bằng chứng cục bộ:
 Unit tests: 22/22 PASS. Browser fixtures Chromium: 27/27 PASS, bao gồm media WAV
 thật phát sau recovery, một lần recovery, Pause thủ công, bật/tắt policy và toàn bộ
 nhánh cũ. Format, git diff --check, build/package/ZIP: PASS. Probe và trang tạm
-không nằm trong ZIP. Bản đóng gói: artifacts/content-blocking-extension-0.1.14.zip.
+không nằm trong ZIP. Bản đóng gói: artifacts/leaf-content-guard-0.1.14.zip.
 
 ---
 
@@ -245,7 +245,7 @@ và các ngoại lệ. Domain đã có trong customDomains được gộp, khôn
 
 Unit tests 16/16, format, build, package, git diff --check và kiểm tra rule mặc
 định/gộp trùng/tắt mạng: PASS. Chưa kiểm tra request youtu.be trên Chrome thật
-trong lần cập nhật này. Bản ZIP: artifacts/content-blocking-extension-0.1.13.zip.
+trong lần cập nhật này. Bản ZIP: artifacts/leaf-content-guard-0.1.13.zip.
 
 ---
 
@@ -287,7 +287,7 @@ Các tab/file chẩn đoán tạm được dọn; không đưa mã chẩn đoán
 Kết quả trực tiếp này xác nhận snackbar gián đoạn đã được ẩn trong tình huống quan
 sát được; không khẳng định sửa mọi nguyên nhân buffering từ máy chủ. Hai loại
 hộp thoại idle/ad blocker còn được kiểm chứng bằng browser fixtures như bản 0.1.11.
-Bản đóng gói: artifacts/content-blocking-extension-0.1.12.zip.
+Bản đóng gói: artifacts/leaf-content-guard-0.1.12.zip.
 
 ---
 
@@ -325,7 +325,7 @@ backdrop và overflow khi có dialog khác.
 Chưa tái hiện ba thông báo trong phiên YouTube đăng nhập thực tế của người dùng.
 Các kiểm thử trên xác nhận hành vi fixture; ẩn cảnh báo không khắc phục việc máy
 chủ từ chối cấp nội dung hoặc buffering do mạng. Autoplay vẫn chịu chính sách
-của trình duyệt. Bản đóng gói: artifacts/content-blocking-extension-0.1.11.zip;
+của trình duyệt. Bản đóng gói: artifacts/leaf-content-guard-0.1.11.zip;
 Load unpacked: dist/extension.
 
 ---
