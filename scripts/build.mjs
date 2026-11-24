@@ -11,6 +11,7 @@ await build({
     background: 'src/background.js',
     content: 'src/content/index.js',
     'youtube-main': 'src/content/youtube-main.js',
+    'youtube-idle-main': 'src/content/youtube-idle-main.js',
     'player-main': 'src/content/player-main.js',
     popup: 'src/ui/popup.js',
     options: 'src/ui/options.js',

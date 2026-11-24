@@ -904,6 +904,101 @@ test('YouTube handles late idle controls and Vietnamese prompts without resuming
   expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
 });
 
+test('YouTube acknowledges background idle actions before deferred rendering without pausing playback', async () => {
+  const page = await fixture('https://www.youtube.com/watch?v=background-idle', promptMedia());
+  await page.evaluate(async () => {
+    // Model a hidden tab whose popup cannot render until the next visible frame.
+    // The real hidden-tab/native-manager flow is also checked in the live profile.
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    const player = document.querySelector('#movie_player');
+    const video = player.querySelector('video');
+    await video.play();
+    window.idleActions = { acknowledgements: 0, dialogs: 0, pauses: 0 };
+    window.sendAction = (actionName, command, target = player) =>
+      target.dispatchEvent(
+        new CustomEvent('yt-action', {
+          bubbles: true,
+          composed: true,
+          detail: { actionName, optionalAction: true, args: [command, target], returnValue: [] },
+        }),
+      );
+    player.addEventListener('yt-action', (event) => {
+      switch (event.detail.actionName) {
+        case 'yt-open-popup-action':
+          window.idleActions.dialogs++;
+          // Deliberately leave the popup unrendered while hidden.
+          break;
+        case 'yt-signal-action-pause-player':
+          window.idleActions.pauses++;
+          video.pause();
+          break;
+        case 'yt-signal-action-acknowledge-youthere':
+          window.idleActions.acknowledgements++;
+          break;
+      }
+    });
+    window.idlePopup = {
+      openPopupAction: {
+        popupType: 'DIALOG',
+        popup: {
+          confirmDialogRenderer: {
+            dialogMessages: [{ runs: [{ text: 'Video paused. Continue watching?' }] }],
+            confirmButton: {
+              buttonRenderer: {
+                serviceEndpoint: {
+                  signalServiceEndpoint: {
+                    actions: [{ signalAction: { signal: 'ACKNOWLEDGE_YOUTHERE' } }],
+                  },
+                },
+              },
+            },
+            onClosedActions: [{ signalAction: { signal: 'PLAY_PLAYER' } }],
+          },
+        },
+      },
+    };
+    window.sendIdle = () => {
+      window.sendAction('yt-open-popup-action', window.idlePopup);
+      window.sendAction('yt-signal-action-pause-player', {
+        signalAction: { signal: 'PAUSE_PLAYER' },
+      });
+    };
+  });
+  for (let i = 1; i <= 2; i++) {
+    await page.evaluate(() => window.sendIdle());
+    expect(await page.evaluate(() => window.idleActions)).toEqual({
+      acknowledgements: i,
+      dialogs: 0,
+      pauses: 0,
+    });
+    expect(await page.locator('video').evaluate((v) => v.paused)).toBe(false);
+  }
+  await expect.poll(() => page.locator('video').evaluate((v) => v.currentTime)).toBeGreaterThan(0);
+  // The exemption is consumed by exactly one accompanying pause command.
+  await page.evaluate(() =>
+    window.sendAction('yt-signal-action-pause-player', {
+      signalAction: { signal: 'PAUSE_PLAYER' },
+    }),
+  );
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+  await page.locator('video').evaluate((v) => v.play());
+  await page.evaluate(() => {
+    window.sendAction('yt-open-popup-action', window.idlePopup);
+    document.querySelector('video').pause();
+  });
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+  // Disabling the feature removes its listener and any pending exemption.
+  await setSettings({ cosmetic: false });
+  await page.locator('video').evaluate((v) => v.play());
+  await page.evaluate(() => window.sendIdle());
+  expect(await page.evaluate(() => window.idleActions)).toEqual({
+    acknowledgements: 3,
+    dialogs: 1,
+    pauses: 2,
+  });
+  expect(await page.locator('video').evaluate((v) => v.paused)).toBe(true);
+});
+
 test('YouTube hides interruption toasts, restores recycled notifications and respects disable settings', async () => {
   const page = await fixture(
     'https://www.youtube.com/watch?v=toast',

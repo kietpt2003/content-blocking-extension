@@ -53,6 +53,11 @@ function sendPageState() {
   // overwrite it with DEFAULTS while the real storage response is pending.
   if (!settingsLoaded) return;
   document.dispatchEvent(
+    new CustomEvent('leaf-content-guard:idle-settings', {
+      detail: JSON.stringify({ enabled: filteringEnabled(settings, host) && settings.cosmetic }),
+    }),
+  );
+  document.dispatchEvent(
     new CustomEvent('leaf-content-guard:player-settings', {
       detail: JSON.stringify({
         enabled:
@@ -84,6 +89,7 @@ function apply(value) {
 }
 
 document.addEventListener('leaf-content-guard:ready', sendPageState);
+document.addEventListener('leaf-content-guard:idle-ready', sendPageState);
 document.addEventListener('leaf-content-guard:player-ready', sendPageState);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? DEFAULTS);

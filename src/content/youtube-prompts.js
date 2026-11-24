@@ -1,3 +1,5 @@
+import { isYouTubeIdleText } from './youtube-idle.js';
+
 // Only inspect YouTube UI surfaces, never titles, comments or page-wide text.
 const SURFACES = [
   'ytd-enforcement-message-view-model',
@@ -24,8 +26,6 @@ const SURFACES = [
 const DIALOGS = 'tp-yt-paper-dialog, dialog, [role="dialog"]';
 const ENFORCEMENT =
   'ytd-enforcement-message-view-model, yt-enforcement-message-view-model, ytd-enforcement-message-renderer';
-const IDLE =
-  /(?:video paused[.!?]?\s*continue watching|continue watching\?|video (?:đã )?tạm dừng[.!?]?\s*(?:bạn có muốn )?tiếp tục xem|tiếp tục xem\?)/iu;
 const INTERRUPTIONS =
   /(?:experiencing interruptions?\??|bạn (?:đang )?gặp (?:phải )?(?:sự cố )?gián đoạn)/iu;
 const AD_BLOCKER =
@@ -38,7 +38,7 @@ const DISMISS =
 export function youtubePromptKind(element) {
   if (element.matches(ENFORCEMENT)) return 'ad-blocker';
   const text = (element.textContent || '').replace(/\s+/gu, ' ').trim();
-  if (IDLE.test(text)) return 'idle';
+  if (isYouTubeIdleText(text)) return 'idle';
   if (AD_BLOCKER.test(text)) return 'ad-blocker';
   if (INTERRUPTIONS.test(text)) return 'interruptions';
   return null;
